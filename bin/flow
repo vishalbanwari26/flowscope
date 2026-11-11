@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Run flowscope on the project in the current folder, with the project's own Python.
+#   flow              open the viewer in a browser
+#   flow <test name>  print that test's flow
+# Set FLOWSCOPE_PYTHON to use a different Python.
+set -e
+here="$(cd "$(dirname "$0")/.." && pwd)"
+
+if [ -n "$FLOWSCOPE_PYTHON" ]; then py=("$FLOWSCOPE_PYTHON")
+elif [ -x .venv/bin/python ]; then py=(.venv/bin/python)
+elif [ -x venv/bin/python ]; then py=(venv/bin/python)
+elif [ -f uv.lock ] && command -v uv >/dev/null 2>&1; then py=(uv run --quiet python)
+else py=(python3)
+fi
+
+# Nothing is installed: flowscope is read straight from this folder.
+export PYTHONPATH="$here/src${PYTHONPATH:+:$PYTHONPATH}"
+
+if [ $# -eq 0 ]; then
+  exec "${py[@]}" -m flowscope serve .
+else
+  exec "${py[@]}" -m flowscope run "$*" .
+fi

@@ -8,7 +8,19 @@ import sys
 import webbrowser
 from pathlib import Path
 
-from . import __version__, hook, modules, report, runner
+from . import __version__, hook, modules, report
+
+
+def _runner():
+    """Import the runner, which needs pytest, with a clear message when it is missing."""
+    try:
+        from . import runner
+    except ModuleNotFoundError as e:
+        if e.name != "pytest":
+            raise
+        sys.exit(f"flowscope: pytest is not installed for {sys.executable}.\n"
+                 "Run it with the project's own Python, which has the project's test dependencies.")
+    return runner
 
 
 def _prepare(path: str) -> Path:
@@ -26,7 +38,7 @@ def _prepare(path: str) -> Path:
 
 
 def _find(root: Path, query: str) -> dict:
-    cases = runner.discover(root)
+    cases = _runner().discover(root)
     exact = [c for c in cases if c["id"] == query]
     hits = exact or [c for c in cases if query.lower() in c["id"].lower() or query.lower() in c["name"].lower()]
     if not hits:
@@ -38,6 +50,7 @@ def _find(root: Path, query: str) -> dict:
 
 
 def cmd_serve(args) -> None:
+    runner = _runner()
     from .server import make_server
     root = _prepare(args.path)
     cases = runner.discover(root)
@@ -58,12 +71,14 @@ def cmd_serve(args) -> None:
 
 
 def cmd_list(args) -> None:
+    runner = _runner()
     root = _prepare(args.path)
     for c in runner.discover(root):
         print(f"{c['id']}\t{c['name']}")
 
 
 def cmd_run(args) -> None:
+    runner = _runner()
     root = _prepare(args.path)
     case = _find(root, args.use_case)
     result = runner.run_use_case(root, case["id"])

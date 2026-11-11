@@ -1,10 +1,11 @@
 ---
-description: Show how a test's code flows through the project's modules, with timing
-argument-hint: "[part of a test name]"
+description: See how a test's code flows through the project, with timing
+argument-hint: "[test name]"
 ---
 
-Use the flowscope skill on the project in the current folder.
+Run `${CLAUDE_PLUGIN_ROOT}/bin/flow $ARGUMENTS` from the project folder. It runs the project's tests.
 
-If I gave a test name or part of one, run that use case and explain the flow: $ARGUMENTS
+- No test name: it opens the viewer in the browser. Run it in the background, then tell me it is open.
+- With a test name: it prints that test's flow. Explain it in plain words, using only what it printed. Quote time as shares, not milliseconds: tracing slows the code.
 
-If I gave nothing, list the use cases and ask me which one to look at.
+If it fails, show me its message.

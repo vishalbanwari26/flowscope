@@ -1,11 +1,11 @@
 """Run the real command line on a tiny project built in a temp folder."""
 import http.client
 import json
+import os
 import subprocess
 import sys
 import threading
-import urllib.error
-import urllib.request
+from pathlib import Path
 
 import pytest
 
@@ -68,8 +68,14 @@ def project(tmp_path):
     return tmp_path
 
 
+SRC = str(Path(__file__).resolve().parents[1] / "src")
+
+
 def flowscope(*args):
-    return subprocess.run([sys.executable, "-m", "flowscope", *args], capture_output=True, text=True, timeout=120)
+    # PYTHONPATH, not an installed copy, so these tests do not depend on how the package got here
+    env = {**os.environ, "PYTHONPATH": SRC}
+    return subprocess.run([sys.executable, "-m", "flowscope", *args], env=env,
+                          capture_output=True, text=True, timeout=120)
 
 
 def test_list_finds_every_test(project):
@@ -140,3 +146,40 @@ def test_server_needs_the_token_and_a_local_host():
     finally:
         server.shutdown()
         server.server_close()
+
+
+def launcher(project, *args, env_extra=None, cwd=None):
+    script = Path(__file__).resolve().parents[1] / "bin" / "flow"
+    env = {**os.environ, "FLOWSCOPE_PYTHON": sys.executable, **(env_extra or {})}
+    env.pop("PYTHONPATH", None)
+    return subprocess.run([str(script), *args], cwd=cwd or project, env=env,
+                          capture_output=True, text=True, timeout=120)
+
+
+def test_launcher_prints_a_flow_without_installing_anything(project):
+    # flowscope is read from the plugin folder through PYTHONPATH, not from site-packages
+    r = launcher(project, "total", "is", "summed")
+    assert r.returncode == 0, r.stderr
+    assert "entry -> pipeline.analyse()" in r.stdout and "[passed]" in r.stdout
+
+
+def test_launcher_prefers_the_projects_own_venv(project):
+    py = project / ".venv" / "bin" / "python"
+    py.parent.mkdir(parents=True)
+    marker = project / "venv-was-used"
+    py.write_text(f'#!/bin/sh\ntouch "{marker}"\nexec "{sys.executable}" "$@"\n')
+    py.chmod(0o755)
+    r = launcher(project, "total is summed", env_extra={"FLOWSCOPE_PYTHON": ""})
+    assert r.returncode == 0, r.stderr
+    assert marker.exists()
+
+
+def test_missing_pytest_gives_a_clear_message(monkeypatch):
+    monkeypatch.setitem(sys.modules, "pytest", None)           # makes "import pytest" fail
+    monkeypatch.delitem(sys.modules, "flowscope.runner", raising=False)
+    import flowscope
+    monkeypatch.delattr(flowscope, "runner", raising=False)    # else "from . import runner" reuses it
+    from flowscope import cli
+    with pytest.raises(SystemExit) as e:
+        cli._runner()
+    assert "pytest is not installed" in str(e.value)

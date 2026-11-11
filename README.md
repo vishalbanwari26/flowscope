@@ -1,69 +1,60 @@
 # flowscope
 
-Pick a test. See which parts of your code it runs, in what order, and where the time goes.
+Pick a test. See how the code flows through your modules, and where the time goes.
 
 When an AI writes much of your code, you can end up with a project whose tests pass and
-whose flow you cannot explain. flowscope turns each test into a use case you can click.
-It runs that test with a tracer attached and shows the calls as a map of your modules.
+whose flow you cannot explain. flowscope turns each test into a use case you can click. It
+runs that test with a tracer attached and shows the calls as a map of your modules.
 
-Status: early. It has been tried on two small Python projects, tested on Python 3.12 only.
+Status: early. Tried on two small Python projects, tested on Python 3.12 only.
 
-## What you get
-
-- **Use cases from your tests.** Every pytest test is a use case, named after the test.
-- **A flow map.** Modules are boxes. A line lights up where a call crosses from one module
-  to another. The calls replay one step at a time so you can follow them.
-- **Inside a module.** Click a box to see the functions that ran inside it.
-- **Setup and action, separated.** A test spends most of its calls building data. Those are
-  hidden by default, so you see what the test is actually about. A toggle shows them.
-- **Time.** Each module and function shows its share of the time. Darker means more.
-- **A text version.** `flowscope run` prints the same flow in the terminal, which is what you
-  want inside a terminal session with no browser.
-
-## Install
-
-Run flowscope with the project's own Python. The tests have to import the project's
-dependencies, so flowscope must live in the same environment.
-
-```bash
-# inside the project, with its virtual environment active
-pip install /path/to/flowscope
-```
-
-With uv, without installing anything permanently:
-
-```bash
-uv run --with /path/to/flowscope flowscope serve
-```
-
-It is not on PyPI yet.
-
-### As a Claude Code plugin
-
-The repository is also a Claude Code plugin. It adds a `/flow` command and a skill that
-tells Claude how to run flowscope on a project safely.
+## Use it in Claude Code
 
 ```bash
 claude plugin marketplace add /path/to/flowscope
 claude plugin install flowscope@flowscope
 ```
 
-To try it for one session without installing: `claude --plugin-dir /path/to/flowscope`.
+Then, in a Python project that has pytest tests:
 
-## Use
+- `/flow` opens the viewer in your browser.
+- `/flow some test name` prints that test's flow, and Claude explains it.
+
+Nothing is installed in your project. flowscope runs with the project's own Python
+(`.venv`, `venv`, a uv project, or `python3`) and is read from the plugin folder. To use a
+different Python, set `FLOWSCOPE_PYTHON`. The launcher is a bash script, so macOS and Linux.
+
+## Use it without Claude Code
 
 ```bash
-flowscope serve            # open the viewer for the project in the current folder
-flowscope list             # list the use cases
-flowscope run "ambiguous"  # run one and print its flow; --setup shows setup calls, --json the raw data
+cd your-project
+/path/to/flowscope/bin/flow                  # open the viewer
+/path/to/flowscope/bin/flow some test name   # print one flow
 ```
 
-`serve` prints a URL with a random token. Open that URL.
+Or install it into the project's environment and use the full command line:
+
+```bash
+pip install /path/to/flowscope
+flowscope serve             # the viewer
+flowscope list              # the use cases
+flowscope run "some test"   # one flow as text; --setup shows setup calls, --json the raw data
+```
+
+## What you see
+
+- **Use cases from your tests.** Every pytest test is a use case, named after the test.
+- **A flow map.** Modules are boxes. A line lights up where a call crosses from one module
+  into another. The calls replay one step at a time.
+- **Inside a module.** Click a box to see the functions that ran inside it.
+- **Setup and action, separated.** A test spends most of its calls building data. Those are
+  hidden by default so you see what the test is about. A toggle shows them.
+- **Time.** Each module and function shows its share of the time. Darker means more.
 
 ## How it decides what is setup
 
-It judges by the function called, not by who called it. A test helper often builds data
-and runs the code under test in the same function, so the caller tells you nothing.
+It judges by the function called, not by who called it. A test helper often builds data and
+runs the code under test in the same function, so the caller tells you nothing.
 
 | The call is | Counts as |
 |---|---|
@@ -74,7 +65,7 @@ and runs the code under test in the same function, so the caller tells you nothi
 | made by a function that setup or action already called | the same as that function |
 
 This is a guess and it can be wrong. If a test is about a loader, the loader is filed as
-setup. Use the "With setup" toggle when the map looks too thin.
+setup. Use "With setup" when the map looks too thin.
 
 ## About the times
 
@@ -88,8 +79,8 @@ not as real milliseconds.
 - **It runs your tests, in place.** A test that writes files will write them. Start from a
   clean git tree and check `git status` afterwards.
 - **Localhost only.** The server listens on 127.0.0.1, checks the Host header, and needs the
-  token printed at startup. Without that, any web page open in your browser could ask it to
-  run tests.
+  random token in the URL it prints. Without that, any web page open in your browser could
+  ask it to run tests.
 - It never sends anything over the network.
 
 ## Limits
@@ -106,6 +97,9 @@ not as real milliseconds.
 uv venv && uv pip install -e . pytest
 .venv/bin/python -m pytest
 ```
+
+If `import flowscope` fails on macOS after an editable install, the venv's `.pth` files may
+have the macOS `hidden` flag, which Python skips. `chflags -R nohidden .venv` clears it.
 
 ## License
 
