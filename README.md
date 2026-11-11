@@ -17,6 +17,17 @@ claude plugin marketplace add vishalbanwari26/flowscope
 claude plugin install flowscope@flowscope
 ```
 
+Other agents (Codex, Cursor, Gemini CLI and others that read skills): install the CLI into your
+project's Python environment, then add the skills.
+
+```bash
+pip install git+https://github.com/vishalbanwari26/flowscope
+npx skills add vishalbanwari26/flowscope
+```
+
+The skills are `explain` and `addtests`. Ask your agent to "explain this project for an interview".
+(I have not run `npx skills add` myself yet.)
+
 Then, inside a Python project that has pytest tests:
 
 | Type | For | You get |

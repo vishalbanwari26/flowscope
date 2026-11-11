@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flowscope</title>
+<meta name="description" content="Run /explain in a Python project. Get a one-page explanation of how it works, made from your tests.">
+<style>
+:root{--bg:#0d1117;--fg:#e6edf3;--mut:#8b949e;--line:#30363d;--card:#161b22;--acc:#f0883e}
+@media (prefers-color-scheme:light){:root{--bg:#fff;--fg:#1f2328;--mut:#59636e;--line:#d1d9e0;--card:#f6f8fa;--acc:#bc4c00}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+main{max-width:760px;margin:0 auto;padding:48px 16px 64px}
+h1{font-size:34px;margin:0 0 8px}
+h2{font-size:20px;margin:40px 0 12px}
+p{margin:0 0 14px}.lead{font-size:19px}.mut{color:var(--mut)}
+a{color:var(--acc)}
+img{max-width:100%;border:1px solid var(--line);border-radius:8px;display:block;margin:24px 0}
+.cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.cards a{display:block;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;text-decoration:none;color:var(--fg)}
+.cards b{display:block;margin-bottom:4px}.cards span{color:var(--mut);font-size:14px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px;overflow-x:auto;font-size:14px}
+</style>
+</head>
+<body>
+<main>
+<h1>flowscope</h1>
+<p class="lead">Run <code>/explain</code> in a Python project. Get a one-page explanation of how it works, made from your tests.</p>
+<p class="mut">It runs your tests with a tracer, sees which parts of the code each one uses and where the time goes, and writes one HTML page you can open offline, mail or print to PDF.</p>
+<img src="assets/demo-explain.gif" alt="Terminal commands, then the generated page scrolling: architecture diagram, call sequence, written sections">
+
+<h2>Example pages</h2>
+<p class="mut">Made from the five tests in a small shop project. Open them in your browser.</p>
+<div class="cards">
+<a href="examples/shop/explain-output/stakeholders.html"><b>For stakeholders</b><span>What the system does, where it is slow, what no test covers.</span></a>
+<a href="examples/shop/explain-output/learn.html"><b>For learning the system</b><span>Architecture, request flow, where state lives, a reading order.</span></a>
+<a href="examples/shop/explain-output/interview.html"><b>For an interview</b><span>Components, design decisions, bottlenecks, questions to expect.</span></a>
+</div>
+
+<h2>Install</h2>
+<pre>claude plugin marketplace add vishalbanwari26/flowscope
+claude plugin install flowscope@flowscope</pre>
+<p class="mut">Then run <code>/explain</code>, <code>/explain learn</code> or <code>/explain interview</code> inside a Python project with pytest tests.</p>
+
+<p style="margin-top:40px"><a href="https://github.com/vishalbanwari26/flowscope">Source and docs on GitHub</a></p>
+</main>
+</body>
+</html>
