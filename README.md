@@ -9,8 +9,8 @@ or print to PDF. Pick who it is for:
 | Command | For | The page adds |
 |---|---|---|
 | `/explain` | Stakeholders who do not read code | Plain sentences about what the system does, a diagram, where it is slow, what no test covers, points to raise |
-| `/explain learn` | An engineer learning the system (a new hire, or you after an AI wrote most of it) | What lives where, with each module's busiest functions and who calls it, and a reading order |
-| `/explain interview` | You, presenting your own project | A two-minute architecture overview, the use cases to walk through, and talking points |
+| `/explain learn` | An engineer learning the system (a new hire, or you after an AI wrote most of it) | The architecture, a sequence diagram per use case, then written sections: how a request moves, state and data, patterns and gotchas, a reading order. Every claim cites `file:line` |
+| `/explain interview` | You, presenting your own project | The architecture and request-flow diagrams, then components, step-by-step flow, design decisions, bottlenecks and scaling, failure modes, and questions to expect |
 
 ## Examples
 
@@ -23,20 +23,23 @@ to them, so you can see what was given to `flow brief`.
 
 ![The stakeholder page: a two-paragraph summary, five use cases in plain sentences, a diagram where catalog is shaded dark, a bar for the price lookup taking 100% of the time, and points to raise](assets/explain-stakeholders.png)
 
-**For learning the system**: [`learn.html`](examples/shop/explain-output/learn.html). It adds
-"What lives where" and a reading order.
+**For learning the system**: [`learn.html`](examples/shop/explain-output/learn.html). It opens with
+the architecture and a sequence diagram of each main use case, then sections on how a request moves,
+where state lives, gotchas, and a reading order.
 
-![The learning page: the same sections plus What lives where, with each module's busiest functions and who calls it, and a reading order that starts at orders.place](assets/explain-learn.png)
+![The learning page: the architecture diagram, three sequence diagrams of calls in order, then sections on architecture, how a request moves with file and line references, state and data, patterns and gotchas, and a reading order](assets/explain-learn.png)
 
-**For an interview**: [`interview.html`](examples/shop/explain-output/interview.html). It ends with
-talking points. The "why" answers in this example are made up, and the page marks them "replace
-with yours". In real use they are your answers to the three questions `/explain` asks.
+**For an interview**: [`interview.html`](examples/shop/explain-output/interview.html). Same diagrams,
+then components, the flow step by step, design decisions, bottlenecks and scaling, failure modes and
+questions to expect. The "why" answers in this example are made up and marked "sample answer, replace
+with yours". In real use they are your answers to the questions `/explain` asks.
 
-![The interview page: a two-minute overview, use cases to walk through, the diagram, what lives where, and talking points with sample answers marked to be replaced](assets/explain-interview.png)
+![The interview page: the architecture and sequence diagrams, then components and responsibilities, request flow step by step, design decisions, bottlenecks and scaling, failure modes and questions to expect, with sample answers marked to be replaced](assets/explain-interview.png)
 
 **What it can and cannot tell you.** The tests show what ran, in what order, and for how long.
-They do not show why you built it that way. For `learn` and `interview`, `/explain` asks you
-three short questions about the why and puts your answers in your words. It does not invent
+They do not show why you built it that way. For `learn` and `interview`, `/explain` reads your code
+for the facts (each with `file:line`, anything guessed marked `(inferred)`) and asks you
+four short questions about the why and puts your answers in your words. It does not invent
 trade-offs or scale numbers. The numbers on the page come from the tests. The sentences are
 Claude's reading of them, so read the page before you send it or present it.
 

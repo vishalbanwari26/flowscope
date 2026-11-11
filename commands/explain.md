@@ -7,25 +7,43 @@ Make a one-page explanation of this project. The reader is `$ARGUMENTS` (if I ga
 
 First, from the project folder, run `${CLAUDE_PLUGIN_ROOT}/bin/flow hld`, `${CLAUDE_PLUGIN_ROOT}/bin/flow bottleneck`, `${CLAUDE_PLUGIN_ROOT}/bin/flow debug` and `${CLAUDE_PLUGIN_ROOT}/bin/flow gaps`. The first may run every test once. If the project has no tests, stop and offer `/addtests`.
 
-Then write two things from what they printed, and nothing else:
+The page draws the architecture and the request flow itself, from the tests. You write two texts: a **summary** (two short paragraphs) and **notes** (the written sections). Notes use `## Heading` lines for sections, `- ` lines for bullets, and backticks for code.
 
-- **summary**: two short paragraphs. What the system does, in terms of the use case names. Then what stands out: where the time goes, what fails, what no test covers.
-- **notes**: a list of lines that each start with `- `.
+## stakeholders
 
-How they differ by reader:
+Plain words, no module names unless needed, what users or the business get. Summary: what the system does, then what stands out. Notes (one `## Points to raise` section): one line each on risk, slow spots, untested areas. Say "untested", never "broken". Use only the command output.
 
-- **stakeholders**: plain words, no module names unless needed, what users or the business get. Notes are "Points to raise": one line each on risk, slow spots, untested areas. Say "untested", never "broken".
-- **learn** (an engineer learning this system): name the modules and what each one is for. Notes are "Where to start reading": a reading order of five to eight modules or functions, entry points first, one line on why each.
-- **interview** (the engineer will present this project): summary reads as a two-minute architecture overview. Notes are "Talking points": the flow of the main use case, the slowest part and what you would do about it, what is not tested and why that matters.
+## learn (an engineer learning this system)
 
-Rules that matter more than style:
+Read the code first: the entry points, the modules the flow output names, and any config, models or schema they use. The page already shows the diagram and a call sequence, so the notes must add what the tests cannot show. Sections, in this order:
 
-1. The tests show what ran, not why it was built that way. Do not invent reasons, trade-offs, scale numbers or alternatives that were not considered. For learn and interview, before you write the notes, ask me up to three short questions about why: why this split into modules, what the main trade-off was, what I would change. Put my answers in the notes in my words. If I skip a question, write it into the notes as `- Question to answer yourself: ...`.
-2. Use only the command output and my answers. Quote shares, not milliseconds.
-3. Never say the system is correct or safe because the tests pass.
+- `## Architecture`: one paragraph. The components, what each one is responsible for, and how they are layered.
+- `## How a request moves`: the main use case step by step, with the data that changes hands, citing `file:line` for each step.
+- `## State and data`: where state lives (globals, files, a database, caches), what is saved, what is lost on restart.
+- `## Patterns and gotchas`: patterns you can see in the code, and anything that would surprise a newcomer. Each with `file:line`.
+- `## Reading order`: five to eight modules or functions, entry points first, one line on why each. End with "run `/flow <test>` to watch it".
 
-Save the summary and the notes to files in `explain-output/` (`summary.txt`, `notes.txt`), then run:
+## interview (the engineer will present this project)
+
+Read the code first, as for learn. The summary is a two-minute architecture overview. Sections, in this order:
+
+- `## Components and responsibilities`: one bullet per component.
+- `## Request flow, step by step`: the main use case, in words a listener can follow, citing `file:line`.
+- `## Design decisions`: each decision with its reason. The reasons come from me, see rule 1.
+- `## Bottlenecks and scaling`: the slowest part from the flow output, what would break first under load (from the code: shared state, locks, blocking calls, single process), and what I would change.
+- `## Failure modes`: what happens on bad input, missing data or a crash, as far as the code shows, and what the tests do and do not prove.
+- `## Questions to expect`: five questions an interviewer would ask about this design, each with a draft answer from the facts above. Where the answer needs my judgment, write `- Question to answer yourself: ...`.
+
+## Rules that matter more than style
+
+1. The tests and the code show what the system does, not why it was built that way. Do not invent reasons, trade-offs, scale numbers or alternatives that were not considered. For learn and interview, before you write the notes, ask me up to four short questions about why: why this split into parts, the main trade-off, what breaks first under load, what I would change. Put my answers in the notes in my words, marked `(your answer)`. If I skip one, write it as `- Question to answer yourself: ...`.
+2. Facts about the code come from the command output or from code you read, each with `file:line`. Mark anything you inferred as `(inferred)`.
+3. Quote shares, not milliseconds. Never say the system is correct or safe because the tests pass.
+
+## Output
+
+Save the texts to `explain-output/summary.txt` and `explain-output/notes.txt`, then run:
 
 `${CLAUDE_PLUGIN_ROOT}/bin/flow brief --for <reader> --summary @explain-output/summary.txt --notes @explain-output/notes.txt`
 
-It writes `explain-output/explain.html`. Tell me the path and show me the summary and notes so I can read them before I use or send the page. Point out anything I should check first. Suggest adding `explain-output/` to `.gitignore` if it is not already there.
+It writes `explain-output/explain.html`. Tell me the path and show me the summary and notes so I can read them before I use or send the page. Point out what I should check first, especially anything marked `(inferred)`. Suggest adding `explain-output/` to `.gitignore` if it is not there.

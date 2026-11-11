@@ -318,16 +318,21 @@ def test_brief_writes_one_page_with_flows_slow_parts_and_gaps(project, cached, t
     assert "http" not in page.replace("http://www.w3.org", "")   # nothing is loaded from the network
 
 
-def test_brief_for_interview_adds_what_lives_where_and_the_notes(project, cached, tmp_path):
+def test_brief_for_interview_leads_with_architecture_and_the_request_flow(project, cached, tmp_path):
     notes = tmp_path / "n.txt"
-    notes.write_text("- First point <i>here</i>\n- Second point\n")
+    notes.write_text("## Design decisions\n- First point <i>here</i> and `code`\n- Second point\n\n## Scaling\nOne line.\n")
     out = tmp_path / "deep" / "explain.html"                       # the folder is created
     r = flowscope("brief", str(project), "--for", "interview", "--out", str(out), "--notes", f"@{notes}")
     assert r.returncode == 0, r.stderr
     page = out.read_text()
-    assert "architecture walkthrough" in page and "Talking points" in page
-    assert "<li>First point &lt;i&gt;here&lt;/i&gt;</li>" in page and "<li>Second point</li>" in page
+    assert "architecture walkthrough" in page
+    assert page.index("Architecture") < page.index("Request flow") < page.index("Design decisions")
+    assert "<h3>Design decisions</h3>" in page and "<h3>Scaling</h3>" in page
+    assert "<li>First point &lt;i&gt;here&lt;/i&gt; and <code>code</code></li>" in page
+    assert "1. analyse()" in page and "2. total()" in page         # the calls, in order, in the sequence
     assert "What lives where" in page and "<code>analyse</code>" in page
     plain = tmp_path / "plain.html"
     flowscope("brief", str(project), "--out", str(plain))
-    assert "What lives where" not in plain.read_text()             # stakeholders do not get it
+    text = plain.read_text()
+    assert "What lives where" not in text and "Request flow" not in text   # stakeholders do not get them
+    assert "How the parts fit" in text

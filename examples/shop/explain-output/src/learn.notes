@@ -1,6 +1,29 @@
-- Start with orders.place: it is the only entry point and shows the whole order of events in about ten lines.
-- Then pricing.total and pricing.discount: the business rule (ten or more items get a discount) lives here.
-- Then stock.reserve and stock.check: they decide whether an order is allowed. check raises an error for too little stock.
-- Then catalog.price_of: small, but it is where the time goes, so read it before changing anything about speed.
-- Last, mailer.receipt: it only formats a message, so it can wait.
-- Run /flow on the test "small order gets a receipt" to watch these calls happen in order.
+## Architecture
+One coordinator and three helpers, with one lookup at the bottom. `orders` coordinates and holds no business rules. `stock` decides whether an order is allowed. `pricing` owns the price and discount rules. `catalog` owns the price list. `mailer` only formats the receipt text.
+
+## How a request moves
+- `orders.place(cart)` receives a cart such as `{"pen": 2}` (orders.py:10).
+- `stock.reserve` runs first: `check` raises `ValueError` if any item is short, then the quantities are subtracted (stock.py:11-13).
+- An order number is taken from a counter (orders.py:12).
+- `pricing.total` adds up price times quantity per item, then applies the discount (pricing.py:13-14). Each item costs one call to `catalog.price_of` (pricing.py:5).
+- `mailer.receipt` turns the number and the total in cents into text such as "Order 1: 3.00 EUR" (mailer.py:2).
+
+## State and data
+- Stock lives in a module-level dictionary, `STOCK` (stock.py:1). It is lost when the process stops.
+- Prices live in a dictionary in `catalog` (catalog.py:3). The 10 ms `sleep` stands in for a database read (catalog.py:7).
+- Order numbers come from a counter in memory (orders.py:7), so they restart at 1 after a restart.
+- Nothing is saved to disk. There are no orders to look up afterwards.
+
+## Patterns and gotchas
+- Coordinator pattern: only `orders` calls the other parts. Reading `place` shows the whole sequence.
+- Stock is reserved before the price is worked out (orders.py:11-13). If pricing ever failed, the items would stay reserved. (inferred from the order of the calls)
+- Money is whole cents, and the discount is whole-number division (pricing.py:14), so it rounds down.
+- The discount applies when the cart holds ten or more items in total, not ten of one item (pricing.py:9).
+
+## Reading order
+- `orders.place`: the whole flow in four lines.
+- `pricing.total` and `pricing.discount`: the business rules.
+- `stock.reserve` and `stock.check`: when an order is refused.
+- `catalog.price_of`: small, but it is where the time goes, so read it before touching speed.
+- `mailer.receipt`: only formatting, so it can wait.
+- Run `/flow small order` to watch these calls happen in order.

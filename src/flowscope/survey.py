@@ -15,7 +15,7 @@ from pathlib import Path
 from . import modules, runner
 
 
-VERSION = 2      # bump when what is saved changes, so old saved overviews are rebuilt
+VERSION = 3      # bump when what is saved changes, so old saved overviews are rebuilt
 
 
 def cache_dir() -> Path:
@@ -35,6 +35,9 @@ def _stamp(root: Path) -> list:
     return [n, newest]
 
 
+SEQ_CAP = 60      # calls kept per test for the sequence view
+
+
 def _record(case: dict, r: dict) -> dict:
     """The small part of one run that the project-wide questions need."""
     ev = r["events"]
@@ -48,8 +51,16 @@ def _record(case: dict, r: dict) -> dict:
         callers[(e["to"], e["func"], who)] += 1
     for i in r["internal"]:
         callers[(i["mod"], i["to"], f"{i['mod']}.{i['from']}")] += i["n"]
+    # the calls in the order they happened, with how deep each one was: enough to draw a sequence
+    by_id = {e["id"]: e for e in ev}
+    def depth(e):
+        d = 0
+        while e["parent"] is not None and e["parent"] in by_id:
+            e, d = by_id[e["parent"]], d + 1
+        return d
+    seq = [[e["from"], e["to"], e["func"], depth(e)] for e in ev if e["role"] != "setup"][:SEQ_CAP]
     return {
-        "id": case["id"], "name": case["name"], "file": case["file"], "outcome": r["outcome"],
+        "id": case["id"], "name": case["name"], "file": case["file"], "outcome": r["outcome"], "seq": seq,
         "output": r.get("output", ""),
         "mods": sorted(mods),
         "funcs": [[f["mod"], f["func"], f["role"], f["calls"], f["self_ms"]] for f in r["funcs"]],

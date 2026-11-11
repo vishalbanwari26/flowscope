@@ -1,3 +1,3 @@
-The shop turns a cart of items into an order. orders.place is the front door: it asks stock to reserve the items, asks pricing for the total, and asks mailer for a receipt. pricing looks every item up in catalog.
+The shop turns a cart of items into an order. `orders.place` is the only entry point: it asks `stock` to reserve the items, asks `pricing` for the total, and asks `mailer` for a receipt. `pricing` looks every item up in `catalog`.
 
-Time is dominated by catalog.price_of, which pretends to be a database lookup. All five tests pass and no module is left untested.
+Everything is in one process and in memory. The one slow step is the price lookup in `catalog`, which stands in for a database call.

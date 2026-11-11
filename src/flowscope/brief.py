@@ -61,8 +61,9 @@ def diagram(ix: Index) -> str:
            for c, members in cols.items() for r, n in enumerate(members)}
     width = (max(cols) + 1) * (NODE_W + COL_GAP) - COL_GAP + 20
     height = max(len(m) for m in cols.values()) * (NODE_H + ROW_GAP) - ROW_GAP + 20
+    box_h = height + 24                              # room for the captions under the boxes
     total = sum(ix.mod_self.values()) or 1.0
-    out = [f'<svg viewBox="0 0 {width} {height}" role="img" aria-label="How the modules call each other">',
+    out = [f'<svg viewBox="0 0 {width} {box_h}" role="img" aria-label="How the modules call each other">',
            '<defs><marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" '
            'orient="auto"><path d="M0 0L8 4L0 8z" class="arrow"/></marker></defs>']
     for a, b in edges:
@@ -76,6 +77,11 @@ def diagram(ix: Index) -> str:
                    f'style="--heat:{min(1.0, share * 1.2):.2f}"/>'
                    f'<text x="{x + NODE_W / 2}" y="{y + 17}" class="nm">{escape(n)}</text>'
                    f'<text x="{x + NODE_W / 2}" y="{y + 32}" class="sub">{pct(ix.mod_self.get(n, 0.0), total)} of time</text></g>')
+    last = max(cols)
+    for c in cols:                                   # name the first and last column; the middle speaks for itself
+        cap = "ENTRY" if c == 0 else "LOWEST LEVEL" if c == last else ""
+        if cap and last > 0:
+            out.append(f'<text x="{c * (NODE_W + COL_GAP) + 10}" y="{height + 14}" class="cap">{cap}</text>')
     out.append("</svg>")
     hidden = len(ix.mod_tests) - len(nodes)
     note = f"<p class='hint'>{hidden} smaller modules are not drawn.</p>" if hidden > 0 else ""
@@ -131,11 +137,12 @@ def failures(ix: Index) -> str:
 
 
 AUDIENCES = {
-    "stakeholders": ("how it works", "What the system does", "Points to raise"),
-    "learn": ("architecture guide", "What the system does", "Where to start reading"),
-    "interview": ("architecture walkthrough", "Use cases to walk through", "Talking points"),
+    "stakeholders": ("how it works", "What the system does"),
+    "learn": ("architecture guide", "Use cases"),
+    "interview": ("architecture walkthrough", "Use cases"),
 }
 TOP_FUNCS = 5
+SEQ_USE_CASES, SEQ_MAX_CALLS, SEQ_COL, SEQ_ROW = 3, 22, 150, 30
 
 
 def parts(ix: Index) -> str:
@@ -148,46 +155,105 @@ def parts(ix: Index) -> str:
         names = ", ".join(f"<code>{escape(f)}</code>" for f, _ in funcs) or "<span class='hint'>nothing recorded</span>"
         callers = sorted({a for (a, b) in ix.edge_tests if b == m and a != "entry"})
         used_by = ("used by " + ", ".join(escape(c) for c in callers)) if callers else "called straight from the tests"
-        cards.append(f"<div class='part'><b>{escape(m)}</b><span class='hint'> · {len(ix.mod_tests[m])} {'test' if len(ix.mod_tests[m]) == 1 else 'tests'} · {used_by}</span>"
-                     f"<div>{names}</div></div>")
+        n = len(ix.mod_tests[m])
+        cards.append(f"<div class='part'><b>{escape(m)}</b><span class='hint'> · {n} {'test' if n == 1 else 'tests'}"
+                     f" · {used_by}</span><div>{names}</div></div>")
     return "".join(cards)
 
 
+def sequence(t: dict) -> str:
+    """One use case as a sequence diagram: who calls whom, in the order it happened."""
+    calls = [c for c in t.get("seq", []) if c[0] != c[1]][:SEQ_MAX_CALLS]
+    if not calls:
+        return ""
+    who = []
+    for a, b, _f, _d in calls:
+        for m in ("test" if a == "entry" else a, b):
+            if m not in who:
+                who.append(m)
+    x = {m: i * SEQ_COL + SEQ_COL / 2 for i, m in enumerate(who)}
+    width, height = len(who) * SEQ_COL, 52 + len(calls) * SEQ_ROW + 14
+    out = [f'<svg viewBox="0 0 {width} {height}" style="max-width:{max(width * 1.5, 480):.0f}px" '
+           f'role="img" aria-label="Calls in order for {escape(t["name"])}">',
+           '<defs><marker id="sa" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" '
+           'orient="auto"><path d="M0 0L8 4L0 8z" class="arrow"/></marker></defs>']
+    for m in who:
+        out.append(f'<rect x="{x[m] - 56}" y="6" width="112" height="28" rx="6" class="node" style="--heat:0"/>'
+                   f'<text x="{x[m]}" y="25" class="nm">{escape(m)}</text>'
+                   f'<line x1="{x[m]}" y1="34" x2="{x[m]}" y2="{height - 6}" class="life"/>')
+    for i, (a, b, fn, _d) in enumerate(calls):
+        a = "test" if a == "entry" else a
+        y = 58 + i * SEQ_ROW + 8
+        x1, x2 = x[a], x[b]
+        out.append(f'<line x1="{x1}" y1="{y}" x2="{x2 - (6 if x2 > x1 else -6)}" y2="{y}" class="edge" marker-end="url(#sa)"/>'
+                   f'<text x="{(x1 + x2) / 2}" y="{y - 5}" class="msg">{i + 1}. {escape(fn)}()</text>')
+    out.append("</svg>")
+    more = len([c for c in t.get("seq", []) if c[0] != c[1]]) - len(calls)
+    note = f"<p class='hint'>{more} more calls are not drawn.</p>" if more > 0 else ""
+    return "".join(out) + note
+
+
+def request_flows(ix: Index) -> str:
+    """Sequence diagrams for the use cases that touch the most parts of the system."""
+    ok = [t for t in ix.tests if t["outcome"] == "passed" and any(c[0] != c[1] for c in t.get("seq", []))]
+    ok.sort(key=lambda t: -len({c[1] for c in t["seq"]}))
+    blocks = [f"<h3>{escape(t['name'])}</h3><p class='hint'>{escape(sentence(t['edges']))}</p>{sequence(t)}"
+              for t in ok[:SEQ_USE_CASES]]
+    return "".join(blocks)
+
+
+def _inline(text: str) -> str:
+    """Escape, then turn `code` into <code>."""
+    parts_ = escape(text).split("`")
+    return "".join(f"<code>{p}</code>" if i % 2 else p for i, p in enumerate(parts_))
+
+
 def notes_html(notes: str) -> str:
-    """Paragraphs, and lines that start with '- ' as a list."""
+    """'## Heading' starts a section, '- ' lines become a list, other lines are paragraphs, `code` is code."""
     out, items = [], []
     for line in notes.splitlines() + [""]:
         if line.startswith("- "):
-            items.append(f"<li>{escape(line[2:])}</li>")
+            items.append(f"<li>{_inline(line[2:])}</li>")
             continue
         if items:
             out.append("<ul class='notes'>" + "".join(items) + "</ul>")
             items = []
-        if line.strip():
-            out.append(f"<p>{escape(line)}</p>")
+        if line.startswith("## "):
+            out.append(f"<h3>{_inline(line[3:])}</h3>")
+        elif line.strip():
+            out.append(f"<p>{_inline(line)}</p>")
     return "".join(out)
+
+
+def _section(title: str, body: str, hint: str = "") -> str:
+    return f"<section><h2>{title}</h2>{f'<p class=hint>{hint}</p>' if hint else ''}{body}</section>" if body else ""
 
 
 def build(ix: Index, summary: str = "", items: list | None = None,
           audience: str = "stakeholders", notes: str = "") -> str:
-    title_tail, cases_h, notes_h = AUDIENCES[audience]
+    title_tail, cases_h = AUDIENCES[audience]
     n, bad = len(ix.tests), len(ix.failing())
     passed = sum(1 for t in ix.tests if t["outcome"] == "passed")
-    paras = "".join(f"<p>{escape(p)}</p>" for p in summary.split("\n\n") if p.strip())
+    paras = "".join(f"<p>{_inline(p)}</p>" for p in summary.split("\n\n") if p.strip())
     head = f'<section class="sum">{paras}</section>' if paras else ""
     stats = (f"<div class='stats'><div><b>{n}</b>use cases checked</div><div><b>{passed}</b>pass</div>"
              f"<div><b>{bad}</b>fail</div><div><b>{len(ix.modules)}</b>parts of the code</div></div>")
     dia = diagram(ix)
-    when = datetime.date.today().isoformat()
-    inside = (f"<section><h2>What lives where</h2><p class='hint'>Each part, how many tests run it, who calls it, "
-              f"and its busiest functions.</p>{parts(ix)}</section>") if audience != "stakeholders" else ""
-    tail = f"<section><h2>{notes_h}</h2>{notes_html(notes)}</section>" if notes.strip() else ""
-    return TEMPLATE.format(
-        title=escape(ix.data["project"]), tail_title=title_tail, cases_h=cases_h, inside=inside, tail=tail,
-        when=when, head=head, stats=stats, cases=use_cases(ix),
-        diagram=f"<section><h2>How the parts fit</h2><p class='hint'>An arrow means one part calls another. "
-                f"Darker means more of the running time.</p>{dia}</section>" if dia else "",
-        slow=slow_parts(ix), gaps=not_covered(ix, items), fails=failures(ix))
+    arrow_hint = "An arrow means one part calls another. Darker means more of the running time."
+    arch = _section("Architecture" if audience != "stakeholders" else "How the parts fit", dia, arrow_hint)
+    flows = _section("Request flow", request_flows(ix),
+                     "The calls between parts, in the order they happened. Calls inside one part are not drawn.")
+    cases = _section(cases_h, use_cases(ix), "Each line is something the tests make the system do, with the parts it uses.")
+    where = _section("What lives where", parts(ix), "Each part, how many tests run it, who calls it, and its busiest functions.")
+    slow = _section("Where it spends its time", slow_parts(ix), "Share of the running time while the tests do their work, by function.")
+    cover, fails = _section("What no test covers", not_covered(ix, items)), _section("What fails", failures(ix))
+    written = f"<section class='written'>{notes_html(notes)}</section>" if notes.strip() else ""
+    if audience == "stakeholders":
+        body = [cases, arch, slow, cover, fails, _section("Points to raise", notes_html(notes)) if notes.strip() else ""]
+    else:        # learn and interview: system design first, the numbers after
+        body = [arch, flows, written, cases, where, slow, cover, fails]
+    return TEMPLATE.format(title=escape(ix.data["project"]), tail_title=title_tail,
+                           when=datetime.date.today().isoformat(), head=head, stats=stats, body="\n".join(body))
 
 
 TEMPLATE = """<!doctype html>
@@ -199,7 +265,7 @@ TEMPLATE = """<!doctype html>
 @media print{{:root{{--bg:#fff;--card:#fff;--line:#d0d7de;--fg:#000;--mut:#444}}}}
 *{{box-sizing:border-box}}body{{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,sans-serif}}
 main{{max-width:880px;margin:0 auto;padding:32px 16px 64px}}h1{{margin:0;font-size:28px}}
-h2{{font-size:18px;margin:36px 0 8px}}.hint,.when{{color:var(--mut);font-size:14px}}
+h2{{font-size:18px;margin:36px 0 8px}}h3{{font-size:15px;margin:22px 0 4px}}.hint,.when{{color:var(--mut);font-size:14px}}
 section{{break-inside:avoid}}.sum{{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:4px 18px;margin:20px 0}}
 .stats{{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}}.stats div{{flex:1 1 120px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;color:var(--mut);font-size:14px}}
 .stats b{{display:block;font-size:26px;color:var(--fg)}}
@@ -209,22 +275,19 @@ section{{break-inside:avoid}}.sum{{background:var(--card);border:1px solid var(-
 svg{{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px}}
 .node{{fill:color-mix(in srgb,var(--acc) calc(var(--heat)*80%),var(--card));stroke:var(--line)}}
 .nm{{fill:var(--fg);font:600 12px system-ui;text-anchor:middle}}.sub{{fill:var(--mut);font:10px system-ui;text-anchor:middle}}
+.cap{{fill:var(--mut);font:600 9px system-ui;letter-spacing:.08em}}.msg{{fill:var(--fg);font:11px ui-monospace,monospace;text-anchor:middle}}
+.life{{stroke:var(--line);stroke-dasharray:4 4}}
 .edge{{fill:none;stroke:var(--mut);stroke-width:1.4;opacity:.8}}.arrow{{fill:var(--mut)}}
 .bar{{display:grid;grid-template-columns:minmax(120px,240px) 1fr 52px;gap:10px;align-items:center;margin:6px 0;font-size:14px}}
 .bar i{{display:block;height:10px;border-radius:5px;background:var(--acc)}}.bar b{{text-align:right}}
-  .part{{padding:10px 0;border-bottom:1px solid var(--line)}}.notes{{padding-left:20px}}
+.part{{padding:10px 0;border-bottom:1px solid var(--line)}}.notes{{padding-left:20px;margin:4px 0}}
+.written{{margin-top:8px}}.written h3{{font-size:17px;margin:30px 0 6px;padding-top:6px;border-top:1px solid var(--line)}}
 code{{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:13px}}
 footer{{margin-top:40px;color:var(--mut);font-size:13px}}
 </style></head><body><main>
 <h1>{title}: {tail_title}</h1><div class="when">Built from the project's own tests on {when}.</div>
 {head}{stats}
-<section><h2>{cases_h}</h2><p class="hint">Each line is something the tests make the system do, with the parts it uses.</p>{cases}</section>
-{diagram}
-{inside}
-<section><h2>Where it spends its time</h2><p class="hint">Share of the running time while the tests do their work, by function.</p>{slow}</section>
-<section><h2>What no test covers</h2>{gaps}</section>
-<section><h2>What fails</h2>{fails}</section>
-{tail}
+{body}
 <footer>Made with flowscope. A use case is a test. "No test covers it" means untested, not unused. Times are shares
 measured with tracing on, which slows the code; read them as shares, not as seconds.</footer>
 </main></body></html>

@@ -1,6 +1,34 @@
-- Walk the main flow: place an order, reserve stock, price the cart, send a receipt. Use the use case "small order gets a receipt".
-- Show the diagram: one coordinator, three helpers, one lookup at the bottom. Point at catalog, the dark box.
-- Slowest part: the price lookup, nearly all of the time. Sample answer (replace with yours): I would cache prices, because they change rarely.
-- Why this split: sample answer (replace with yours): each module can be tested on its own, which is why there are small, fast tests.
-- Not tested: behavior with many customers at once. Sample answer (replace with yours): stock.reserve would need a lock or a database transaction.
-- Question to answer yourself: what would you change first if this had to handle a hundred orders a second?
+## Components and responsibilities
+- `orders`: coordinates one order from start to receipt, and issues order numbers (orders.py:10-13).
+- `stock`: knows what is available and refuses what is not (stock.py:4-13).
+- `pricing`: price per item, the ten-item discount, and the total (pricing.py:4-14).
+- `catalog`: the price list, behind a lookup call that stands in for a database (catalog.py:6-8).
+- `mailer`: formats the receipt and nothing else (mailer.py:1-2).
+
+## Request flow, step by step
+- The caller sends a cart. `orders.place` first asks `stock` to reserve it. If anything is short, the order stops with an error and nothing is priced.
+- Next it takes an order number, asks `pricing` for the total, and `pricing` asks `catalog` for each item's price.
+- Last it asks `mailer` for the receipt text and returns it. The sequence diagram above shows these calls in order.
+
+## Design decisions
+- Split into small modules: each one can be tested alone. (sample answer, replace with yours)
+- Coordinator in `orders`, rules in the helpers: a change to the discount does not touch the order flow. (sample answer, replace with yours)
+- Everything in memory: fast to build and test, and enough for a first version. (sample answer, replace with yours)
+
+## Bottlenecks and scaling
+- Slowest part: the price lookup, nearly all of the running time. It is called once per item, one after another (pricing.py:5).
+- A cache for prices, or one lookup for the whole cart, would remove most of the time. (sample answer, replace with yours)
+- What breaks first under load: `check` and the subtraction in `reserve` are two separate steps (stock.py:11-13). Two orders at the same time could both pass the check. (inferred) It would need a lock or a database transaction.
+- Order numbers and stock live in one process, so a second server would have its own copy of both. (inferred)
+
+## Failure modes
+- Too little stock: the order is refused with `ValueError` and stock is unchanged (stock.py:7). A test covers this.
+- Unknown item: refused as not in stock, because the check treats it as zero available (stock.py:6). No test covers an unknown item.
+- Restart: all stock changes and order numbers are lost. (inferred)
+- The tests run one order at a time, so they say nothing about orders at the same moment.
+
+## Questions to expect
+- Why is the receipt a separate module? Because formatting changes for different reasons than pricing does. (sample answer, replace with yours)
+- How would you make the price lookup fast? Cache it or fetch the whole cart in one call, and check the share of time again afterwards.
+- How would you stop two orders from taking the same last item? Question to answer yourself: lock, transaction, or reserve with a conditional update?
+- What would you add before real customers use this? Question to answer yourself: persistence, payment, and what happens when the receipt cannot be sent?
