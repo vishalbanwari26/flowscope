@@ -20,7 +20,7 @@ JS_EXT = {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}
 
 
 def is_js_project(root) -> bool:
-    """A package.json that uses Jest is a JavaScript or TypeScript project."""
+    """A package.json that uses Jest or Vitest is a JavaScript or TypeScript project."""
     import json
     if os.environ.get("FLOWSCOPE_LANG") == "python":
         return False
@@ -29,7 +29,9 @@ def is_js_project(root) -> bool:
     except (OSError, ValueError):
         return False
     deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
-    return "jest" in deps or "jest" in pkg or any((Path(root) / f"jest.config{e}").exists() for e in (".js", ".ts", ".cjs", ".mjs", ".json"))
+    return ("jest" in deps or "jest" in pkg or "vitest" in deps
+            or any((Path(root) / f"{n}.config{e}").exists() for n in ("jest", "vitest")
+                   for e in (".js", ".ts", ".cjs", ".mjs", ".mts", ".json")))
 
 
 def is_project_file(rel: Path, exts=PY_EXT) -> bool:

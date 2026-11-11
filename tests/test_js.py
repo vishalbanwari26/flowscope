@@ -1,4 +1,5 @@
-"""JavaScript and TypeScript projects (Jest). Needs Node and `npm install` in examples/jsshop."""
+"""JavaScript and TypeScript projects, with Jest and with Vitest.
+Needs Node and `npm install` in examples/jsshop (Jest) and examples/tsshop-vitest (Vitest)."""
 import os
 import shutil
 import subprocess
@@ -8,19 +9,28 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parent.parent
-SHOP = ROOT / "examples" / "jsshop"
 SRC = str(ROOT / "src")
 
-pytestmark = pytest.mark.skipif(
-    not (shutil.which("node") and (SHOP / "node_modules" / ".bin" / "jest").exists()),
-    reason="needs node and `npm install` in examples/jsshop")
+
+def _installed(name, tool):
+    return bool(shutil.which("node") and (ROOT / "examples" / name / "node_modules" / ".bin" / tool).exists())
+
+
+@pytest.fixture(params=[
+    pytest.param("jsshop", id="jest", marks=pytest.mark.skipif(
+        not _installed("jsshop", "jest"), reason="needs node and `npm install` in examples/jsshop")),
+    pytest.param("tsshop-vitest", id="vitest", marks=pytest.mark.skipif(
+        not _installed("tsshop-vitest", "vitest"), reason="needs node and `npm install` in examples/tsshop-vitest")),
+])
+def shop(request):
+    return ROOT / "examples" / request.param
 
 
 @pytest.fixture
-def run(tmp_path):
+def run(tmp_path, shop):
     def go(*args):
         env = {**os.environ, "PYTHONPATH": SRC, "FLOWSCOPE_CACHE": str(tmp_path / "cache")}
-        return subprocess.run([sys.executable, "-m", "flowscope", *args, str(SHOP)], env=env,
+        return subprocess.run([sys.executable, "-m", "flowscope", *args, str(shop)], env=env,
                               capture_output=True, text=True, timeout=180)
     return go
 

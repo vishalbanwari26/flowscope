@@ -78,13 +78,58 @@ def _jest_flags(root: Path, tmp: Path) -> list:
     return flags
 
 
+def framework(root: Path) -> str:
+    """"vitest" or "jest"."""
+    try:
+        pkg = json.loads((root / "package.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "jest"
+    deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
+    return "vitest" if "vitest" in deps and "jest" not in deps else "jest"
+
+
+def _read_traces(out: Path) -> dict:
+    traces: dict = {}
+    for f in sorted(out.glob("*.json")) if out.exists() else []:
+        for r in json.loads(f.read_text()):
+            traces[(r["file"], r["name"])] = r
+    return traces
+
+
+def _vitest_runs(root: Path, tmp: Path) -> list:
+    report = tmp / "report.json"
+    r = subprocess.run([_node(), str(JS_DIR / "vitest-run.mjs"), str(root), str(tmp / "modules.json"),
+                        str(tmp / "out"), str(report)],
+                       cwd=root, capture_output=True, text=True)
+    try:
+        rows = json.loads(report.read_text())
+    except (OSError, ValueError):
+        raise SystemExit("flowscope: Vitest did not produce a result. Run it yourself to see why.\n"
+                         + ANSI.sub("", (r.stderr or r.stdout))[-600:])
+    traces = _read_traces(tmp / "out")
+    pairs = []
+    for row in rows:
+        file = Path(row["file"])
+        rel = file.relative_to(root).as_posix() if file.is_relative_to(root) else file.name
+        outcome = {"pass": "passed", "fail": "failed", "error": "error"}.get(row["state"], "skipped")
+        tr = traces.get((row["file"], row["name"]), {})
+        result = {"outcome": outcome, "events": tr.get("events", []), "internal": tr.get("internal", []),
+                  "funcs": tr.get("funcs", []), "call_ms": row.get("duration")}
+        if outcome in ("failed", "error"):
+            result["output"] = ANSI.sub("", row.get("error", ""))[-2000:]
+        pairs.append(({"id": f"{rel}::{row['name']}", "name": row["title"], "file": file.name}, result))
+    return pairs
+
+
 def collect_runs(root: Path) -> list:
-    """Run every Jest test once. Returns (case, result) pairs shaped like the Python runner's."""
+    """Run every test once. Returns (case, result) pairs shaped like the Python runner's."""
     root = root.resolve()
     names = {f: n for f, n in modules.configure(root).names.items() if n}
     with tempfile.TemporaryDirectory(prefix="flowscope-") as t:
         tmp = Path(t)
         (tmp / "modules.json").write_text(json.dumps(names))
+        if framework(root) == "vitest":
+            return _vitest_runs(root, tmp)
         flags = _jest_flags(root, tmp)
         env = dict(os.environ, FLOWSCOPE_MODULES=str(tmp / "modules.json"), FLOWSCOPE_OUT=str(tmp / "out"))
         report = tmp / "report.json"
@@ -94,10 +139,7 @@ def collect_runs(root: Path) -> list:
             data = json.loads(report.read_text())
         except (OSError, ValueError):
             raise SystemExit("flowscope: Jest did not produce a result. Run it yourself to see why.")
-        traces: dict = {}
-        for f in sorted((tmp / "out").glob("*.json")) if (tmp / "out").exists() else []:
-            for r in json.loads(f.read_text()):
-                traces[(r["file"], r["name"])] = r
+        traces = _read_traces(tmp / "out")
     pairs = []
     for suite in data.get("testResults", []):
         file = Path(suite["name"])

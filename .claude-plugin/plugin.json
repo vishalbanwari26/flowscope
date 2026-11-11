@@ -4,5 +4,5 @@
   "description": "/explain turns a Python or JavaScript/TypeScript project's tests into a one-page explanation of how the system works: for stakeholders, for learning it, or for an interview. Plus commands to trace flows, find bottlenecks and add tests.",
   "author": { "name": "Vishal Banwari" },
   "license": "MIT",
-  "keywords": ["python", "pytest", "javascript", "typescript", "jest", "architecture", "explain", "interview", "code-understanding"]
+  "keywords": ["python", "pytest", "javascript", "typescript", "jest", "vitest", "architecture", "explain", "interview", "code-understanding"]
 }

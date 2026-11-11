@@ -153,19 +153,24 @@ MIT
 ## JavaScript and TypeScript
 
 `hld`, `lld`, `scope`, `debug`, `bottleneck`, `gaps`, `brief` and `/explain` work on projects that
-test with Jest. A Babel plugin wraps each named function of your own files (not `node_modules`, not
-test files), and a Jest setup file records, per test, which module called which and for how long.
-It uses your own Jest configuration and only adds a transform and a setup file.
+test with Jest or Vitest. Your own test configuration is still used; flowscope only adds a
+transform and a setup file. Both record, per test, which module called which and for how long.
 
-What you need: `npm install` done, Jest, and either a Babel setup (`babel.config.js`) or
-`@babel/preset-env` plus `@babel/preset-typescript` installed so flowscope can read the code.
+- **Jest:** a Babel plugin wraps each named function of your own files (not `node_modules`, not test
+  files). Needs `npm install` done, and either a Babel setup (`babel.config.js`) or
+  `@babel/preset-env` plus `@babel/preset-typescript` installed so flowscope can read the code.
+- **Vitest:** a Vite plugin does the same to the JavaScript Vite has already made from your
+  TypeScript, so it needs no Babel. It switches on Vitest's `globals` for the run and adds a setup file.
 
 What is different from Python:
 - No per-test view yet: `flow run`, `/flow` and the viewer say so. The project-wide commands work.
 - A function is only recorded if it has a name (a `const f = () => ...`, a method, a declaration).
   An anonymous callback counts under the function around it.
-- `beforeEach` and `afterEach` hooks count as setup. Builder-like names (`create*`, `seed*`, ...) and
-  constructors count as setup, as in Python.
+- Jest: `beforeEach` and `afterEach` hooks count as setup. Vitest: they do not, because the hooks are
+  imported from `vitest`. Builder-like names (`create*`, `seed*`, ...) and constructors count as setup
+  in both, as in Python.
 - Async functions are recorded, but their time includes the waiting.
-- Only the first Jest project is read when the config lists several. Vitest is not supported.
+- Jest: only the first project is read when the config lists several. Vitest workspaces are not handled.
 - `gaps` lists exported functions and class methods; if a file has no exports it lists top-level ones.
+  It reads the code with `@babel/parser` if the project has it, else TypeScript, else Node's type
+  stripper with Vite's parser (Node 22.13 or newer).

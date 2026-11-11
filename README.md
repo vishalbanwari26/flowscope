@@ -28,7 +28,7 @@ npx skills add vishalbanwari26/flowscope
 The skills are `explain` and `addtests`. Ask your agent to "explain this project for an interview".
 (I have not run `npx skills add` myself yet.)
 
-Then, inside a project that has pytest tests (Python) or Jest tests (JavaScript or TypeScript):
+Then, inside a project that has pytest tests (Python) or Jest or Vitest tests (JavaScript or TypeScript):
 
 | Type | For | You get |
 |---|---|---|
@@ -53,10 +53,11 @@ Made from the five tests in [`examples/shop`](examples/shop). Open them in your 
   asks you the "why" questions. Read the page before you send it.
 - It runs your tests in place. Start from a clean git tree.
 - Nothing leaves your machine.
-- Python (pytest) and JavaScript/TypeScript (Jest). Early: Python was tried on five projects (3.12);
-  JavaScript/TypeScript is new and was tried on one small TypeScript project. It needs `npm install`
-  done and a Babel setup (`babel-jest`). See [`examples/jsshop`](examples/jsshop). For JavaScript
-  the per-test view (`/flow`, the viewer) is not there yet, and `/addtests` writes pytest tests only.
+- Python (pytest) and JavaScript/TypeScript (Jest or Vitest). Early: Python was tried on five projects
+  (3.12). JavaScript/TypeScript is new: it was tried on two small examples
+  ([Jest](examples/jsshop), [Vitest](examples/tsshop-vitest)) and one real Vitest project with 121 tests.
+  It needs `npm install` done, and for Jest a Babel setup. For JavaScript the per-test view
+  (`/flow`, the viewer) is not there yet, and `/addtests` writes pytest tests only.
 
 More: [every command, the viewer, and how it works](docs/reference.md).
 
