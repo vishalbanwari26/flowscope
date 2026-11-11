@@ -9,121 +9,189 @@ body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 system-ui,san
 .wrap{max-width:1180px;margin:auto}
 h1{font-size:20px;margin:0 0 2px}.sub{color:var(--mute);margin:0 0 14px}
 h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);margin:0 0 8px}
-.grid{display:grid;grid-template-columns:260px minmax(0,1.3fr) minmax(0,1fr);gap:14px;align-items:start}
-@media(max-width:980px){.grid{grid-template-columns:1fr}}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px}
+.grid{display:grid;grid-template-columns:270px minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:860px){.grid{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px}
+.card[hidden]{display:none}
+input{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:6px 8px;font:inherit;margin:0 0 8px}
+#list{max-height:78vh;overflow:auto}
 .uc{display:block;width:100%;text-align:left;background:none;color:var(--text);border:1px solid transparent;border-radius:7px;padding:6px 8px;font:inherit;cursor:pointer}
-.uc:hover{border-color:var(--line)}.uc.sel{background:#1c2330;border-color:var(--acc)}
+.uc:hover{border-color:var(--line)}.uc.sel{background:#1c2330;border-color:var(--acc)}.uc[hidden]{display:none}
 .uc small{display:block;color:var(--mute);font:11px ui-monospace,monospace}
 .mark{float:right;font-size:12px}.p{color:var(--ok)}.f{color:var(--bad)}
-.tools{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
 button.s{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:7px;padding:4px 10px;font:inherit;cursor:pointer}
 button.s:hover,button.s.sel{border-color:var(--acc)}
-.step i{color:var(--mute);margin-right:6px;font-style:normal;border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:10px}
-svg{width:100%;height:auto;display:block}
-.node rect{fill:#1c2330;stroke:var(--line);stroke-width:1.5}
-.node text{fill:var(--text);font:12px ui-monospace,monospace;text-anchor:middle;dominant-baseline:middle}
-.edge{fill:none;stroke:var(--acc);stroke-linecap:round}
-.node{cursor:pointer}.node.open rect{stroke:var(--acc)!important}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 8px}
+.title{font-weight:600;margin:0 0 8px}
+.badge{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin-left:6px;font-weight:400}
+.hint{color:var(--mute);font-size:12px;margin:6px 0 0}.empty{color:var(--mute)}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px;font:12px ui-monospace,monospace;overflow:auto;max-height:220px;white-space:pre-wrap}
+/* where the time goes */
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);border-radius:7px;padding:4px 10px;color:var(--text);cursor:pointer;font:13px ui-monospace,monospace;background:#1c2330}
+.chip:hover,.chip.open{border-color:var(--acc)}.chip b{font-weight:600;margin-left:6px}
 #drill h2{margin-top:14px}#drill code{color:var(--text);font:12px ui-monospace,monospace}
-.fn rect{fill:#1c2330;stroke:var(--line);stroke-width:1.3}.fn.ext rect{stroke:var(--hot)}
-.fn text{fill:var(--text);font:11px ui-monospace,monospace;text-anchor:middle}
-.fn .c{fill:var(--mute);font-size:10px}
+details>summary{cursor:pointer;color:var(--mute);font-size:12px}
+/* the call tree */
+.trow{display:flex;align-items:center;gap:8px;padding:3px 8px;border-radius:6px;font:13px ui-monospace,monospace}
+.trow.has{cursor:pointer}.trow:hover{background:#1c2330}
+.car{width:12px;color:var(--mute);flex:none}.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nm i{color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:0 4px;font-size:10px;font-style:normal;margin-right:6px}
+.x{color:var(--hot)}
+.bar{width:90px;height:6px;background:var(--bg);border-radius:3px;flex:none;overflow:hidden}.bar span{display:block;height:100%;background:var(--hot)}
+.pc{width:38px;text-align:right;flex:none}.ms{width:70px;text-align:right;color:var(--mute);flex:none}
+@media(max-width:560px){.bar{display:none}}
+/* function graph inside a module */
+svg{width:100%;height:auto;display:block}
+.fn rect{stroke:var(--line);stroke-width:1.3}.fn.ext rect{stroke:var(--hot)}
+.fn text{fill:var(--text);font:11px ui-monospace,monospace;text-anchor:middle}.fn .c{fill:var(--mute);font-size:10px}
 .fe{fill:none;stroke:#58a6ff;stroke-opacity:.7;stroke-width:1.3}.fl{fill:var(--hot);font:10px ui-monospace,monospace;text-anchor:middle}
-.hint{color:var(--mute);font-size:12px;margin-top:6px}
-.ms{color:var(--hot);margin-left:8px;white-space:nowrap}.node text.pct{fill:var(--mute);font:10px ui-monospace,monospace}
-.steps{max-height:520px;overflow:auto}
-.step{padding:5px 0;border-top:1px solid var(--line);font:12px ui-monospace,monospace;color:var(--mute)}
-.step:first-child{border-top:0}.step.now{color:var(--text)}.step b{color:var(--hot);font-weight:600}
-.title{font-weight:600;margin-bottom:6px}.empty{color:var(--mute)}
-.badge{font-size:12px;padding:1px 8px;border-radius:99px;border:1px solid var(--line);margin-left:6px}
+.gn rect{fill:#1c2330;stroke:var(--line);stroke-width:1.3}.gn text{fill:var(--text);font:12px ui-monospace,monospace;text-anchor:middle}
+.ge{fill:none;stroke:#58a6ff;stroke-opacity:.6;stroke-linecap:round}
 </style>
 <div class="wrap">
   <h1>flowscope</h1>
-  <p class="sub">Pick a use case. The code it runs is replayed one step at a time, module to module.</p>
+  <p class="sub">Pick a use case. See what it calls and where the time goes.</p>
   <div class="grid">
     <div class="card">
       <h2>Use cases (tests)</h2>
+      <input id="q" placeholder="Filter" aria-label="Filter use cases">
       <div id="list"><div class="empty">Loading…</div></div>
-      <div class="tools"><button class="s" id="slow">Slower</button><button class="s" id="fast">Faster</button><span class="empty" id="spd"></span></div>
     </div>
-    <div class="card"><svg id="g" viewBox="0 0 640 520" role="img" aria-label="Module graph"></svg>
-      <div class="empty" id="dark" style="margin-top:8px;font-size:12px"></div>
-      <div class="hint" id="hint"></div>
-      <div id="drill"></div></div>
-    <div class="card">
-      <h2>Flow</h2>
-      <div class="tools" style="margin:0 0 10px;padding:0;border:0"><button class="s sel" id="vAction">Action only</button><button class="s" id="vAll">With setup</button></div>
-      <div class="title" id="title">Nothing selected</div>
-      <div class="hint" id="sethint" style="margin:0 0 6px"></div>
-      <div class="hint" style="margin:0 0 8px">Measured with tracing on, which slows the code down (a few times, in our measurements). Read times as shares, not real milliseconds. A step's time includes the calls it makes.</div>
-      <div class="steps" id="steps"><div class="empty">Click a use case on the left.</div></div>
+    <div class="main">
+      <div class="card">
+        <div class="title" id="title">Pick a use case on the left</div>
+        <div class="row"><button class="s sel" id="vAction">Action only</button><button class="s" id="vAll">With setup</button></div>
+        <div class="hint" id="sethint"></div>
+        <pre id="out" hidden></pre>
+      </div>
+      <div class="card" id="modcard" hidden>
+        <h2>Where the time goes</h2>
+        <div class="chips" id="chips"></div>
+        <div class="hint" id="chiphint"></div>
+        <div id="drill"></div>
+        <details class="hint" id="untouched"><summary id="untsum"></summary><div id="untlist"></div></details>
+      </div>
+      <div class="card" id="treecard" hidden>
+        <h2>What it calls</h2>
+        <div class="row"><button class="s" id="expand">Expand all</button><button class="s" id="collapse">Collapse</button></div>
+        <div id="tree"></div>
+      </div>
+      <details class="card" id="gcard" hidden><summary>Graph of the busiest modules</summary><svg id="g" viewBox="0 0 640 420" role="img" aria-label="Module graph"></svg></details>
+      <div class="hint">Times are measured with tracing on, which slows the code down (a few times, in our measurements). Read them as shares, not real milliseconds. A call's time includes the calls it makes.</div>
     </div>
   </div>
 </div>
 <script>
-const NS="http://www.w3.org/2000/svg",g=document.getElementById("g");
 const T=new URLSearchParams(location.search).get("t")||"";      // the server only answers with its token
 const api=p=>fetch("/api/"+p+(p.includes("?")?"&":"?")+"t="+encodeURIComponent(T));
-let nodes={},edges={},delay=450,token=0,allMods=[],lastRun={events:[],internal:[],funcs:[]};
-
-function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||g).appendChild(e);return e}
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const fmtMs=v=>v<0.05?"<0.1 ms":v<10?v.toFixed(1)+" ms":Math.round(v)+" ms";
+const pct=(v,t)=>{const p=100*v/t;return p<1?"<1%":Math.round(p)+"%"};
+let allMods=[],current=null,view="action",showAll=false,token=0,curTree=[],
+    lastRun={events:[],internal:[],funcs:[]};
+const keep=x=>showAll||x.role!=="setup";                 // no role (older server) counts as action
+const totalSelf=()=>lastRun.funcs.reduce((a,f)=>a+f.self_ms,0)||1;   // self times add up, no double counting
+const modShares=()=>{const m={};lastRun.funcs.forEach(f=>m[f.mod]=(m[f.mod]||0)+f.self_ms);
+  return Object.entries(m).sort((a,b)=>b[1]-a[1])};
 
 async function init(){
   allMods=(await (await api("modules")).json()).modules;
-  el("defs",{}).innerHTML='<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0L10 5L0 10z" fill="#58a6ff"/></marker>';
-  const eg=el("g",{});eg.id="edges";
-  requestAnimationFrame(draw);
   const ucs=(await (await api("usecases")).json()).usecases;
-  const list=document.getElementById("list");list.innerHTML="";
+  const list=$("list");list.innerHTML=ucs.length?"":'<div class="empty">No tests found.</div>';
   ucs.forEach(u=>{
-    const b=document.createElement("button");b.className="uc";
-    b.innerHTML=`<span class="mark"></span>${u.name}<small>${u.id.split("::")[0].split("/").pop()}</small>`;
+    const b=document.createElement("button");b.className="uc";b.dataset.q=(u.name+" "+u.file).toLowerCase();
+    b.innerHTML=`<span class="mark"></span>${esc(u.name)}<small>${esc(u.file)}</small>`;
     b.onclick=()=>play(u,b);list.appendChild(b);
   });
+  $("q").oninput=e=>{const q=e.target.value.toLowerCase();
+    list.querySelectorAll(".uc").forEach(b=>b.hidden=!b.dataset.q.includes(q))};
 }
 
-function edgeFor(a,b){
-  const k=a+">"+b;if(edges[k])return edges[k];
-  const A=nodes[a],B=nodes[b],dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
-  const qx=(A.x+B.x)/2-dy*0.12,qy=(A.y+B.y)/2+dx*0.12;
-  const p=el("path",{class:"edge",d:`M${A.x+ux*44},${A.y+uy*18} Q${qx},${qy} ${B.x-ux*44},${B.y-uy*18}`,"marker-end":"url(#ar)"},document.getElementById("edges"));
-  return edges[k]={p,hot:-1e9,count:0};
+async function play(u,btn){
+  const my=++token;
+  document.querySelectorAll(".uc").forEach(b=>b.classList.remove("sel"));btn.classList.add("sel");
+  $("title").textContent=u.name;$("sethint").textContent="Running…";
+  ["modcard","treecard","gcard","out"].forEach(i=>$(i).hidden=true);
+  const r=await (await api("run?id="+encodeURIComponent(u.id))).json();
+  if(my!==token)return;
+  if(r.error){$("sethint").textContent=r.error;return}
+  current={u,r};
+  const oc=r.outcome||(r.passed?"passed":"failed");
+  btn.querySelector(".mark").innerHTML={passed:'<span class="p">✓</span>',failed:'<span class="f">✗</span>',skipped:'<span>–</span>'}[oc]||"?";
+  show();
 }
 
-function layout(events){           // place only the modules this use case touched
-  document.querySelectorAll("g.node").forEach(n=>n.remove());nodes={};
-  const touched=[];
-  for(const e of events)for(const m of [e.from,e.to])if(!touched.includes(m))touched.push(m);
-  const cx=320,cy=260,r=touched.length>10?225:200;
-  const tot=totalSelf(),modMs={};
-  lastRun.funcs.forEach(f=>modMs[f.mod]=(modMs[f.mod]||0)+f.self_ms);
-  touched.forEach((name,i)=>{
-    const a=-Math.PI/2+i*2*Math.PI/touched.length;
-    const n=nodes[name]={x:cx+r*Math.cos(a),y:cy+r*Math.sin(a),hot:-1e9};
-    const grp=el("g",{class:"node"});
-    const ent=name==="entry",share=ent?0:(modMs[name]||0)/tot;
-    n.rect=el("rect",{x:n.x-42,y:n.y-18,width:84,height:36,rx:7},grp);
-    if(share>0)n.rect.style.fill=`rgba(240,136,62,${Math.min(0.55,share*0.7).toFixed(2)})`;
-    el("text",{x:n.x,y:n.y-(ent?0:4)},grp).textContent=name;
-    if(!ent){el("text",{class:"pct",x:n.x,y:n.y+10},grp).textContent=pct(modMs[name]||0,tot);grp.onclick=()=>drill(name,grp)}
+function show(){                                          // draw the current use case in the current view
+  const {u,r}=current,oc=r.outcome||(r.passed?"passed":"failed");
+  // If hiding setup would leave nothing, show it: the test is probably about a constructor or loader.
+  const hasAction=r.events.some(e=>e.role!=="setup")||(r.internal||[]).some(i=>i.role!=="setup");
+  const autoSetup=r.events.length>0&&!hasAction;
+  showAll=view==="all"||autoSetup;
+  const evs=r.events.filter(keep),hidden=r.events.length-evs.length;
+  lastRun={events:evs,internal:(r.internal||[]).filter(keep),funcs:(r.funcs||[]).filter(keep)};
+  $("title").innerHTML=`${esc(u.name)}<span class="badge ${oc==="passed"?"p":oc==="failed"?"f":""}">test ${oc}</span><span class="badge">${evs.length} calls</span>`;
+  const setup=r.events.filter(e=>e.role==="setup");
+  $("sethint").textContent=autoSetup&&view==="action"
+    ?"Every call here is setup-style (constructors, builders), so they are shown. The test is probably about one of them."
+    :(view==="action"&&hidden?`Setup hidden: ${hidden} calls (${[...new Set(setup.map(e=>e.to+"."+e.func))].slice(0,4).join(", ")}${new Set(setup.map(e=>e.to+"."+e.func)).size>4?", …":""})`:"");
+  $("out").hidden=oc==="passed"||!r.output;$("out").textContent=r.output||"";
+  renderChips();
+  curTree=showAll?(r.tree||{}).all||[]:(r.tree||{}).action||[];
+  renderTree();
+  $("modcard").hidden=false;$("treecard").hidden=false;$("gcard").hidden=!evs.length;
+  if($("gcard").open)renderGraph();
+}
+
+/* where the time goes: a few chips, not a map */
+function renderChips(){
+  const tot=totalSelf(),all=modShares();
+  const top=all.filter(([m,v],i)=>i<8&&(v/tot>=0.01||i<3));
+  $("chips").innerHTML="";$("drill").innerHTML="";
+  top.forEach(([m,v])=>{
+    const b=document.createElement("button");b.className="chip";
+    b.style.background=`rgba(240,136,62,${Math.min(0.5,v/tot*0.6).toFixed(2)})`;
+    b.innerHTML=`${esc(m)}<b>${pct(v,tot)}</b>`;b.onclick=()=>drill(m,b);$("chips").appendChild(b);
   });
-  document.getElementById("hint").textContent="Click a module to see the functions inside it.";
-  const dark=allMods.filter(m=>!touched.includes(m));
-  document.getElementById("dark").textContent=dark.length?"Not touched by "+(view==="action"?"the action":"this use case")+": "+dark.join(", "):"";
+  $("chiphint").textContent=(all.length?"Each module's own time, not counting the modules it calls. Click one to see the functions inside it.":"No calls recorded.")
+    +(all.length>top.length?` ${all.length-top.length} smaller modules not shown.`:"");
+  const touched=new Set(lastRun.funcs.map(f=>f.mod)),unt=allMods.filter(m=>m!=="entry"&&!touched.has(m));
+  $("untouched").hidden=!unt.length;
+  $("untsum").textContent=`${unt.length} of ${allMods.length-1} modules not touched by ${showAll?"this use case":"the action"}`;
+  $("untlist").textContent=unt.join(", ");
 }
 
-const fmtMs=v=>v<0.05?"<0.1 ms":v<10?v.toFixed(1)+" ms":Math.round(v)+" ms";
-const totalSelf=()=>lastRun.funcs.reduce((a,f)=>a+f.self_ms,0)||1;   // self times add up, no double counting
-const pct=(v,t)=>{const p=100*v/t;return p<1?"<1%":Math.round(p)+"%"};
-const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+/* what it calls: a tree, opened along the heavy path only */
+function renderTree(){
+  const box=$("tree");box.innerHTML="";
+  const total=curTree.reduce((a,n)=>a+n.ms,0)||1;
+  if(!curTree.length){box.innerHTML='<div class="empty">No calls into the project were recorded.</div>';return}
+  const build=(list,depth,into)=>{
+    for(const n of list){
+      const share=n.ms/total,has=n.kids.length;
+      const wrap=document.createElement("div"),row=document.createElement("div"),kids=document.createElement("div");
+      row.className="trow"+(has?" has":"");row.style.paddingLeft=(8+depth*18)+"px";
+      row.innerHTML=`<span class="car">${has?"▸":"·"}</span><span class="nm">${n.role==="setup"?"<i>setup</i>":""}${esc(n.mod)}.<b>${esc(n.func)}</b>()${n.n>1?` <span class="x">×${n.n}</span>`:""}</span><span class="bar"><span style="width:${Math.max(1,Math.round(share*100))}%"></span></span><span class="pc">${pct(n.ms,total)}</span><span class="ms">${fmtMs(n.ms)}</span>`;
+      kids.hidden=true;let built=false;
+      n._open=on=>{if(on&&!built){build(n.kids,depth+1,kids);built=true}kids.hidden=!on;row.querySelector(".car").textContent=on?"▾":"▸"};
+      if(has){row.onclick=()=>n._open(kids.hidden);if(share>=0.15&&depth<6)n._open(true)}
+      wrap.append(row,kids);into.append(wrap);
+    }
+  };
+  build(curTree,0,box);
+}
+const openAll=list=>list.forEach(n=>{if(n.kids.length){n._open&&n._open(true);openAll(n.kids)}});
+$("expand").onclick=()=>openAll(curTree);
+$("collapse").onclick=renderTree;
 
-function drill(mod,grp){
-  document.querySelectorAll("g.node").forEach(n=>n.classList.remove("open"));
-  if(grp)grp.classList.add("open");
-  const box=document.getElementById("drill");
+/* the functions inside one module */
+function drill(mod,chip){
+  document.querySelectorAll(".chip").forEach(c=>c.classList.remove("open"));
+  if(chip)chip.classList.add("open");
+  const box=$("drill");
   const ints=(lastRun.internal||[]).filter(i=>i.mod===mod);
-  const entry={};                                   // functions called from outside the module
+  const entry={};                                         // functions called from outside the module
   for(const e of lastRun.events)if(e.to===mod)entry[e.func]=(entry[e.func]||0)+1;
   const fns=[],add=f=>{if(f&&!fns.includes(f))fns.push(f)};
   Object.keys(entry).forEach(add);ints.forEach(i=>{add(i.from);add(i.to)});
@@ -144,8 +212,7 @@ function drill(mod,grp){
       part.forEach((f,i)=>pos[f]={x:640*(i+1)/(part.length+1),y:34+row*66});row++;
     }
   });
-  const H=row*66+16,w=f=>Math.max(84,Math.min(f.length,22)*6.8+16);
-  const name=f=>f.length>22?f.slice(0,21)+"…":f;
+  const H=row*66+16,w=f=>Math.max(84,Math.min(f.length,22)*6.8+16),name=f=>f.length>22?f.slice(0,21)+"…":f;
   let svg=`<svg viewBox="0 0 640 ${H}" role="img" aria-label="Functions inside ${esc(mod)}"><defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="8" markerHeight="8" orient="auto"><path d="M0 0L10 5L0 10z" fill="#58a6ff"/></marker></defs>`;
   const self={};
   for(const x of ints){
@@ -158,89 +225,39 @@ function drill(mod,grp){
     if(x.n>1)svg+=`<text class="fl" x="${cx}" y="${cy-2}">×${x.n}</text>`;
   }
   for(const f of fns){
-    const p=pos[f],ww=w(f);
-    const share=(selfMs[f]||0)/tot;
+    const p=pos[f],ww=w(f),share=(selfMs[f]||0)/tot;
     svg+=`<g class="fn ${entry[f]?"ext":""}"><rect x="${p.x-ww/2}" y="${p.y-15}" width="${ww}" height="30" rx="6" style="fill:rgba(240,136,62,${Math.min(0.55,share*0.7).toFixed(2)})"/>
       <text x="${p.x}" y="${p.y-2}">${esc(name(f))}${self[f]?" ↻"+self[f]:""}</text><text class="c" x="${p.x}" y="${p.y+10}">×${calls[f]} · ${pct(selfMs[f]||0,tot)}</text></g>`;
   }
-  box.innerHTML=head+svg+'</svg><div class="hint">Orange outline: called from outside this module. ×N is the number of calls. The % is the function\'s own time, not counting what it calls, as a share of all traced time in this view. Darker means more.</div>';
+  box.innerHTML=head+svg+'</svg><div class="hint">Orange outline: called from outside this module. ×N is the number of calls. The % is the function\'s own time as a share of the traced time. Darker means more.</div>';
 }
 
-function collapse(events){          // merge consecutive identical calls into one step
-  const steps=[];
-  for(const e of events){
-    const s=steps[steps.length-1];
-    if(s&&s.from===e.from&&s.to===e.to&&s.func===e.func&&s.role===e.role){s.n++;s.ms+=e.ms||0}
-    else steps.push({from:e.from,to:e.to,func:e.func,role:e.role,n:1,ms:e.ms||0});
+/* optional: the busiest modules and the calls between them */
+function renderGraph(){
+  const g=$("g");g.innerHTML="";
+  const tot=totalSelf(),mods=modShares().slice(0,8).map(([m])=>m),names=["entry",...mods],set=new Set(names);
+  const cx=320,cy=210,r=150,pos={};
+  names.forEach((n,i)=>{const a=-Math.PI/2+i*2*Math.PI/names.length;pos[n]={x:cx+r*1.5*Math.cos(a),y:cy+r*Math.sin(a)}});
+  const cnt={};
+  lastRun.events.forEach(e=>{if(set.has(e.from)&&set.has(e.to)){const k=e.from+">"+e.to;cnt[k]=(cnt[k]||0)+1}});
+  let s='<defs><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerUnits="userSpaceOnUse" markerWidth="9" markerHeight="9" orient="auto"><path d="M0 0L10 5L0 10z" fill="#58a6ff"/></marker></defs>';
+  for(const [k,n] of Object.entries(cnt)){
+    const [a,b]=k.split(">"),A=pos[a],B=pos[b],dx=B.x-A.x,dy=B.y-A.y,len=Math.hypot(dx,dy)||1,ux=dx/len,uy=dy/len;
+    s+=`<path class="ge" style="stroke-width:${(1+Math.log2(1+n)*0.5).toFixed(1)}" d="M${A.x+ux*48},${A.y+uy*18} Q${(A.x+B.x)/2-dy*0.1},${(A.y+B.y)/2+dx*0.1} ${B.x-ux*48},${B.y-uy*18}" marker-end="url(#ag)"/>`;
   }
-  return steps;
+  const by=Object.fromEntries(modShares());
+  names.forEach(n=>{const p=pos[n];
+    const label=n.length>14?n.slice(0,13)+"…":n;
+    s+=`<g class="gn"><rect x="${p.x-48}" y="${p.y-18}" width="96" height="36" rx="7"${by[n]?` style="fill:rgba(240,136,62,${Math.min(0.5,by[n]/tot*0.6).toFixed(2)})"`:""}/><text x="${p.x}" y="${p.y-(n==="entry"?0:3)}">${esc(label)}</text>${n==="entry"?"":`<text x="${p.x}" y="${p.y+11}" style="fill:var(--mute);font-size:10px">${pct(by[n]||0,tot)}</text>`}</g>`;
+  });
+  g.innerHTML=s;
 }
-
-let view="action",current=null;                    // "action" hides setup, "all" shows it
-const keep=x=>view==="all"||x.role!=="setup";      // no role (older server) counts as action
-
-async function play(u,btn){
-  const my=++token;
-  document.querySelectorAll(".uc").forEach(b=>b.classList.remove("sel"));btn.classList.add("sel");
-  document.getElementById("edges").innerHTML="";edges={};
-  document.getElementById("title").textContent=u.name;
-  document.getElementById("sethint").textContent="";
-  document.getElementById("steps").innerHTML='<div class="empty">Running…</div>';
-  const r=await (await api("run?id="+encodeURIComponent(u.id))).json();
-  if(my!==token)return;
-  if(r.error){document.getElementById("steps").innerHTML=`<div class="empty">${esc(r.error)}</div>`;return}
-  current={u,r};
-  const oc=r.outcome||(r.passed?"passed":"failed");
-  btn.querySelector(".mark").innerHTML={passed:'<span class="p">✓</span>',failed:'<span class="f">✗</span>',skipped:'<span>–</span>'}[oc]||"?";
-  await show(my);
-}
-
-async function show(my){                           // draw the current use case in the current view
-  const {u,r}=current;
-  for(const k in nodes)nodes[k].hot=-1e9;
-  document.getElementById("edges").innerHTML="";edges={};
-  const evs=r.events.filter(keep),hidden=r.events.length-evs.length;
-  lastRun={events:evs,internal:(r.internal||[]).filter(keep),funcs:(r.funcs||[]).filter(keep)};
-  document.getElementById("drill").innerHTML="";
-  const oc=r.outcome||(r.passed?"passed":"failed");
-  layout(evs);
-  const steps=collapse(evs),title=document.getElementById("title"),box=document.getElementById("steps");
-  title.innerHTML=`${esc(u.name)}<span class="badge ${oc==="passed"?"p":oc==="failed"?"f":""}">test ${oc}</span><span class="badge">${evs.length} calls, ${steps.length} steps</span>`;
-  const setup=collapse(r.events.filter(e=>e.role==="setup"));
-  document.getElementById("sethint").textContent=(view==="action"&&hidden)
-    ?`Setup hidden: ${setup.length} steps, ${hidden} calls (${setup.slice(0,4).map(s=>s.to+"."+s.func+(s.n>1?" ×"+s.n:"")).join(", ")}${setup.length>4?", …":""})`:"";
-  box.innerHTML=steps.length?"":'<div class="empty">No cross-module calls recorded.</div>';
-  const tot=totalSelf();
-  for(let i=0;i<steps.length;i++){
-    if(my!==token)return;
-    const s=steps[i],now=performance.now(),ed=edgeFor(s.from,s.to);
-    ed.hot=now;ed.count+=s.n;nodes[s.to].hot=now;if(nodes[s.from])nodes[s.from].hot=now;
-    const d=document.createElement("div");d.className="step now";
-    d.innerHTML=`${i+1}. ${s.role==="setup"?"<i>setup</i>":""}${s.from} → ${s.to}.${s.func}()${s.n>1?` <b>×${s.n}</b>`:""}<span class="ms">${fmtMs(s.ms)} · ${pct(s.ms,tot)}</span>`;
-    box.prepend(d);[...box.children].slice(1).forEach(c=>c.classList.remove("now"));
-    await new Promise(res=>setTimeout(res,delay));
-  }
-}
+$("gcard").addEventListener("toggle",()=>{if($("gcard").open)renderGraph()});
 
 function setView(v){
-  view=v;
-  document.getElementById("vAction").classList.toggle("sel",v==="action");
-  document.getElementById("vAll").classList.toggle("sel",v==="all");
-  if(current)show(++token);
+  view=v;$("vAction").classList.toggle("sel",v==="action");$("vAll").classList.toggle("sel",v==="all");
+  if(current)show();
 }
-document.getElementById("vAction").onclick=()=>setView("action");
-document.getElementById("vAll").onclick=()=>setView("all");
-
-function draw(now){
-  for(const k in edges){const e=edges[k],a=Math.max(0,1-(now-e.hot)/1800);
-    e.p.style.strokeOpacity=0.4+0.6*a;e.p.style.strokeWidth=1.4+Math.min(4,Math.log2(1+e.count)*0.5)*a;
-    e.p.style.stroke=a>0.05?"#f0883e":"#58a6ff"}
-  for(const k in nodes){const n=nodes[k],a=Math.max(0,1-(now-n.hot)/1800);
-    n.rect.style.stroke=a>0.05?"#f0883e":"#2a313c";n.rect.style.strokeWidth=1.5+2*a}
-  requestAnimationFrame(draw);
-}
-const spd=()=>document.getElementById("spd").textContent=(delay/1000).toFixed(2)+"s/step";
-document.getElementById("slow").onclick=()=>{delay=Math.min(1500,delay+150);spd()};
-document.getElementById("fast").onclick=()=>{delay=Math.max(80,delay-150);spd()};
-spd();init();
+$("vAction").onclick=()=>setView("action");$("vAll").onclick=()=>setView("all");
+init();
 </script>

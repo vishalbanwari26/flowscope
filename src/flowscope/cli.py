@@ -77,12 +77,67 @@ def cmd_list(args) -> None:
         print(f"{c['id']}\t{c['name']}")
 
 
+def _index(args):
+    """The project-wide survey: every test run once, then cached."""
+    _runner()                                   # a clear message if pytest is missing
+    from . import survey
+    root = _prepare(args.path)
+
+    def progress(i, n):
+        if i == 1:
+            print(f"flowscope: running {n} tests once to build the overview; it is saved for next time",
+                  file=sys.stderr, flush=True)
+
+    return survey.Index(survey.load(root, fresh=args.fresh, progress=progress))
+
+
+def cmd_hld(args) -> None:
+    from . import overview
+    print(overview.hld(_index(args)))
+
+
+def cmd_lld(args) -> None:
+    from . import overview
+    print(overview.lld(_index(args), args.module))
+
+
+def cmd_scope(args) -> None:
+    from . import overview
+    print(overview.scope(_index(args), args.name))
+
+
+def _test_or_folder(args) -> None:
+    """With one optional argument, a folder means the project and anything else a test name."""
+    if args.use_case and args.path == "." and Path(args.use_case).is_dir():
+        args.path, args.use_case = args.use_case, None
+
+
+def cmd_debug(args) -> None:
+    from . import overview
+    _test_or_folder(args)
+    if not args.use_case:
+        return print(overview.debug_all(_index(args)))
+    runner = _runner()
+    root = _prepare(args.path)
+    print(report.render_debug(runner.run_use_case(root, _find(root, args.use_case)["id"])))
+
+
+def cmd_bottleneck(args) -> None:
+    from . import overview
+    _test_or_folder(args)
+    if not args.use_case:
+        return print(overview.bottleneck(_index(args)))
+    runner = _runner()
+    root = _prepare(args.path)
+    print(report.render_bottleneck(runner.run_use_case(root, _find(root, args.use_case)["id"])))
+
+
 def cmd_run(args) -> None:
     runner = _runner()
     root = _prepare(args.path)
     case = _find(root, args.use_case)
     result = runner.run_use_case(root, case["id"])
-    print(json.dumps(result, indent=1) if args.json else report.render(result, args.setup))
+    print(json.dumps(result, indent=1) if args.json else report.render(result, args.setup, args.depth))
 
 
 def main(argv=None) -> None:
@@ -108,7 +163,39 @@ def main(argv=None) -> None:
     s.add_argument("path", nargs="?", default=".")
     s.add_argument("--json", action="store_true", help="print the raw recording")
     s.add_argument("--setup", action="store_true", help="include setup calls")
+    s.add_argument("--depth", type=int, default=3, help="how many levels of calls to print (default 3)")
     s.set_defaults(fn=cmd_run)
+
+    fresh = {"action": "store_true", "help": "run the tests again instead of using the saved overview"}
+
+    s = sub.add_parser("hld", help="the project's modules, and which tests reach them")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_hld)
+
+    s = sub.add_parser("lld", help="the functions that ran inside one module")
+    s.add_argument("module")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_lld)
+
+    s = sub.add_parser("scope", help="which tests reach a module or a function")
+    s.add_argument("name", help="a module, or module.function")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_scope)
+
+    s = sub.add_parser("debug", help="what went wrong in a failing test; with no test, list the failing ones")
+    s.add_argument("use_case", nargs="?", help="a test id, or part of its name")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_debug)
+
+    s = sub.add_parser("bottleneck", help="where the time goes: across all tests, or in one test")
+    s.add_argument("use_case", nargs="?", help="a test id, or part of its name")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_bottleneck)
 
     args = ap.parse_args(argv)
     args.fn(args)

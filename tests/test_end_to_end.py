@@ -100,10 +100,29 @@ def test_flow_is_split_into_setup_and_action_and_timed(project):
         ("action", "pipeline", "util", "total"),
     ]
     assert all(e["ms"] >= 0 for e in data["events"])
+    # each call knows which call made it, so the calls form a tree
+    by_func = {e["func"]: e for e in data["events"] if e["role"] == "action"}
+    assert by_func["analyse"]["parent"] is None and by_func["total"]["parent"] == by_func["analyse"]["id"]
+    assert [n["func"] for n in data["tree"]["action"]] == ["analyse"]
+    assert [k["func"] for k in data["tree"]["action"][0]["kids"]] == ["total"]
     # a call inside one module is counted, not replayed
     assert {"mod": "pipeline", "from": "analyse", "to": "_score", "role": "action", "n": 1} in data["internal"]
     # self times add up per function, and the test files are not modules
     assert {f["mod"] for f in data["funcs"]} == {"store", "pipeline", "util"}
+
+
+def test_dataclass_methods_are_not_invisible(tmp_path):
+    # a dataclass __init__ is generated from a string, so its file name is "<string>"
+    (tmp_path / "models.py").write_text(
+        "from dataclasses import dataclass\n\n@dataclass\nclass Point:\n    x: int\n    y: int = 0\n")
+    (tmp_path / "geometry.py").write_text(
+        "from models import Point\n\ndef shifted(x):\n    return Point(x + 1)\n")
+    (tmp_path / "tests").mkdir()
+    (tmp_path / "tests" / "test_g.py").write_text(
+        "from geometry import shifted\n\ndef test_shift():\n    assert shifted(1).x == 2\n")
+    data = json.loads(flowscope("run", "shift", str(tmp_path), "--json").stdout)
+    calls = [(e["from"], e["to"], e["func"]) for e in data["events"]]
+    assert ("geometry", "models", "__init__") in calls
 
 
 def test_failure_and_skip_are_reported_as_such(project):
@@ -115,9 +134,9 @@ def test_failure_and_skip_are_reported_as_such(project):
 
 def test_text_report_hides_setup(project):
     out = flowscope("run", "total is summed", str(project)).stdout
-    assert "entry -> pipeline.analyse()" in out
+    assert "pipeline.analyse()" in out and "util.total()" in out
     assert "3 setup calls hidden" in out and "store.add_row" not in out
-    assert "Inside pipeline:" in out and "analyse -> _score" in out
+    assert "flowscope lld <module>" in out            # inside a module is a separate question
 
 
 def test_ambiguous_or_unknown_name_is_an_error_not_a_guess(project):
@@ -158,9 +177,9 @@ def launcher(project, *args, env_extra=None, cwd=None):
 
 def test_launcher_prints_a_flow_without_installing_anything(project):
     # flowscope is read from the plugin folder through PYTHONPATH, not from site-packages
-    r = launcher(project, "total", "is", "summed")
+    r = launcher(project, "run", "total is summed")
     assert r.returncode == 0, r.stderr
-    assert "entry -> pipeline.analyse()" in r.stdout and "[passed]" in r.stdout
+    assert "pipeline.analyse()" in r.stdout and "[passed]" in r.stdout
 
 
 def test_launcher_prefers_the_projects_own_venv(project):
@@ -169,7 +188,7 @@ def test_launcher_prefers_the_projects_own_venv(project):
     marker = project / "venv-was-used"
     py.write_text(f'#!/bin/sh\ntouch "{marker}"\nexec "{sys.executable}" "$@"\n')
     py.chmod(0o755)
-    r = launcher(project, "total is summed", env_extra={"FLOWSCOPE_PYTHON": ""})
+    r = launcher(project, "run", "total is summed", env_extra={"FLOWSCOPE_PYTHON": ""})
     assert r.returncode == 0, r.stderr
     assert marker.exists()
 
@@ -183,3 +202,81 @@ def test_missing_pytest_gives_a_clear_message(monkeypatch):
     with pytest.raises(SystemExit) as e:
         cli._runner()
     assert "pytest is not installed" in str(e.value)
+
+
+# ---- the project-wide commands: hld, lld, scope, debug ----
+
+@pytest.fixture()
+def cached(tmp_path_factory, monkeypatch):
+    # keep the saved overviews out of the real home directory
+    monkeypatch.setenv("FLOWSCOPE_CACHE", str(tmp_path_factory.mktemp("cache")))
+
+
+def test_hld_ranks_modules_and_shows_the_main_links(project, cached):
+    r = flowscope("hld", str(project))
+    assert r.returncode == 0, r.stderr
+    out = r.stdout
+    assert "3 tests (1 fail), 3 modules" in out
+    assert "Modules, by how many tests reach them:" in out
+    assert "pipeline" in out and "util" in out and "Main links" in out and "pipeline -> util" in out
+
+
+def test_lld_lists_the_functions_that_ran_and_who_called_them(project, cached):
+    out = flowscope("lld", "pipeline", str(project)).stdout
+    assert "pipeline: reached by 2 of 3 tests" in out
+    assert "analyse" in out and "2 tests" in out and "called by outside" in out
+    assert "_score" in out and "called by pipeline.analyse" in out
+    assert "It calls into: util" in out
+
+
+def test_scope_lists_the_tests_that_reach_a_function_with_their_result(project, cached):
+    out = flowscope("scope", "util.total", str(project)).stdout
+    assert "Tests that reach util.total (2 of 3):" in out
+    assert "[ok  ] test_flow.py: total is summed" in out and "[FAIL] test_flow.py: wrong total fails" in out
+
+
+def test_scope_says_untested_and_not_unused(project, cached):
+    out = flowscope("scope", "store.nothing", str(project)).stdout
+    assert "No test runs" in out
+    (project / "orphan.py").write_text("def lonely():\n    return 1\n")
+    out = flowscope("scope", "orphan", str(project)).stdout
+    assert "Nothing called" in out or "No test runs" in out
+
+
+def test_debug_lists_failing_tests_with_the_reason(project, cached):
+    out = flowscope("debug", str(project)).stdout          # one folder argument means "this project"
+    assert "1 of 3 tests fail:" in out and "wrong total fails" in out and "assert" in out
+
+
+def test_debug_one_test_shows_the_error_and_the_last_calls(project, cached):
+    out = flowscope("debug", "wrong total", str(project)).stdout
+    assert "[failed]" in out and "What went wrong:" in out
+    assert "util.total()" in out.split("The last calls")[1]
+    assert "[passed]" not in out
+
+
+def test_debug_of_a_passing_test_says_so(project, cached):
+    out = flowscope("debug", "total is summed", str(project)).stdout
+    assert "This test passes" in out
+
+
+def test_the_overview_is_saved_and_rebuilt_when_the_code_changes(project, cached):
+    first = flowscope("hld", str(project))
+    assert "running 3 tests once" in first.stderr
+    again = flowscope("hld", str(project))
+    assert "running" not in again.stderr and again.stdout == first.stdout      # from the saved copy
+    (project / "util.py").write_text("def total(rows):\n    return sum(rows) + 0\n")
+    assert "running 3 tests once" in flowscope("hld", str(project)).stderr     # an edit invalidates it
+
+
+def test_bottleneck_ranks_functions_and_names_the_slowest_tests(project, cached):
+    out = flowscope("bottleneck", str(project)).stdout
+    assert "Where the time goes across 3 tests" in out
+    assert "pipeline.analyse" in out and "util.total" in out
+    assert "Slowest tests" in out and "total is summed" in out
+    assert "outside the project" in out              # the caution about waiting on other things
+
+
+def test_bottleneck_of_one_test_shows_the_heaviest_path(project, cached):
+    out = flowscope("bottleneck", "total is summed", str(project)).stdout
+    assert "Heaviest path" in out and "pipeline.analyse()" in out and "Most own time:" in out

@@ -7,7 +7,7 @@ import threading
 
 import pytest
 
-from . import hook
+from . import hook, report
 
 _lock = threading.Lock()    # one use case at a time, so the active run is unambiguous
 _cache: list = []
@@ -88,6 +88,8 @@ def run_use_case(root, nodeid: str) -> dict:
     result = {"id": nodeid, "name": label(nodeid), "outcome": outcome,
               "passed": outcome == "passed", "call_ms": oc.call_ms}
     result.update(run.as_dict())
+    result["tree"] = {"action": report.build_tree(run.events, lambda e: e["role"] != "setup"),
+                      "all": report.build_tree(run.events)}
     if outcome != "passed":
         result["output"] = captured.get("out", "")[-2000:]
     return result

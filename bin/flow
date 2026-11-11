@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Run flowscope on the project in the current folder, with the project's own Python.
-#   flow              open the viewer in a browser
-#   flow <test name>  print that test's flow
+#   flow                     open the viewer in a browser
+#   flow run <test name>     print one test's flow
+#   flow hld | lld | scope | debug ...   see `flowscope --help`
 # Set FLOWSCOPE_PYTHON to use a different Python.
 set -e
 here="$(cd "$(dirname "$0")/.." && pwd)"
@@ -16,8 +17,6 @@ fi
 # Nothing is installed: flowscope is read straight from this folder.
 export PYTHONPATH="$here/src${PYTHONPATH:+:$PYTHONPATH}"
 
-if [ $# -eq 0 ]; then
-  exec "${py[@]}" -m flowscope serve .
-else
-  exec "${py[@]}" -m flowscope run "$*" .
-fi
+# flow <command> [args]; with no command it opens the viewer
+if [ $# -eq 0 ]; then set -- serve; fi
+exec "${py[@]}" -m flowscope "$@"

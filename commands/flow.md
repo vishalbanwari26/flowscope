@@ -1,11 +1,8 @@
 ---
-description: See how a test's code flows through the project, with timing
-argument-hint: "[test name]"
+description: What one test runs, as a short call tree with time shares
+argument-hint: "<test name>"
 ---
 
-Run `${CLAUDE_PLUGIN_ROOT}/bin/flow $ARGUMENTS` from the project folder. It runs the project's tests.
+If I gave a test name, run `${CLAUDE_PLUGIN_ROOT}/bin/flow run $ARGUMENTS` from the project folder. Show me the output, then explain it in two or three plain sentences, using only what it printed. Quote time as shares, not milliseconds: tracing slows the code.
 
-- No test name: it opens the viewer in the browser. Run it in the background, then tell me it is open.
-- With a test name: it prints that test's flow. Explain it in plain words, using only what it printed. Quote time as shares, not milliseconds: tracing slows the code.
-
-If it fails, show me its message.
+If I gave nothing, run `${CLAUDE_PLUGIN_ROOT}/bin/flow list` and ask me which test to look at.

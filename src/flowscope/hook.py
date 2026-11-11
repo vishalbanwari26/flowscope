@@ -6,6 +6,7 @@ stay inside a module are only counted per function pair, for drill-down.
 """
 from __future__ import annotations
 
+import itertools
 import sys
 import threading
 import time
@@ -20,6 +21,7 @@ _tls = threading.local()   # per thread: the open entry call and its role, and t
 class Run:
     def __init__(self, name: str) -> None:
         self.name = name
+        self.ids = itertools.count()
         self.events: list = []     # cross-module calls, in order
         self.internal: dict = {}   # (module, caller_func, func, role) -> count
         self.funcs: dict = {}      # (module, func, role) -> [calls, self_seconds]
@@ -90,9 +92,18 @@ def _finish(frame) -> None:
         ev["ms"] = inclusive * 1000
 
 
+def _file(frame) -> str:
+    name = frame.f_code.co_filename
+    if name[:1] == "<":
+        # Code made by exec, such as a dataclass __init__, reports "<string>".
+        # The module it was made for is still in its globals.
+        return frame.f_globals.get("__file__") or name
+    return name
+
+
 def on_event(frame, event, arg):
     code = frame.f_code
-    callee = modules.module_of(code.co_filename)   # cached, so library code costs one lookup
+    callee = modules.module_of(_file(frame))   # cached, so library code costs one lookup
     if callee is None or code.co_name.startswith("<"):
         return   # not project code; lambdas and comprehensions count under their function
     if event == "return":
@@ -113,7 +124,7 @@ def on_event(frame, event, arg):
         back = frame.f_back
         while back and back.f_code.co_name.startswith("<") and back.f_code.co_name != "<module>":
             back = back.f_back
-        caller = modules.module_of(back.f_code.co_filename) if back else None
+        caller = modules.module_of(_file(back)) if back else None
         caller_func = back.f_code.co_name if caller else None
 
         role = getattr(_tls, "role", None)
@@ -124,15 +135,17 @@ def on_event(frame, event, arg):
             else:
                 role = "setup" if PHASE in ("setup", "teardown") else "action"
 
+        st = _tls.__dict__.setdefault("stack", [])
         ev = None
         if caller == callee:
             k = (callee, caller_func, code.co_name, role)
             run.internal[k] = run.internal.get(k, 0) + 1
         else:
-            ev = {"from": caller or "entry", "from_func": caller_func, "to": callee,
+            parent = next((rec[7]["id"] for rec in reversed(st) if rec[7] is not None), None)
+            ev = {"id": next(run.ids), "parent": parent,      # parent: the call that made this one
+                  "from": caller or "entry", "from_func": caller_func, "to": callee,
                   "func": code.co_name, "role": role}
             run.events.append(ev)
-        st = _tls.__dict__.setdefault("stack", [])
         st.append([frame, time.perf_counter(), 0.0, run, callee, code.co_name, role, ev])
     except Exception:
         pass  # a failing profile hook would be removed by Python; never let that happen
