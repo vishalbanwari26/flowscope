@@ -1,0 +1,8 @@
+{
+  "name": "flowscope",
+  "version": "0.1.0",
+  "description": "Pick a test and see how the code flows through the project's modules, with timing. For understanding code you did not write.",
+  "author": { "name": "Vishal Banwari" },
+  "license": "MIT",
+  "keywords": ["python", "pytest", "tracing", "code-understanding", "visualization"]
+}

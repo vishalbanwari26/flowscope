@@ -1,0 +1,12 @@
+{
+  "name": "flowscope",
+  "owner": { "name": "Vishal Banwari" },
+  "description": "Tools for understanding code you did not write.",
+  "plugins": [
+    {
+      "name": "flowscope",
+      "source": "./",
+      "description": "Pick a test and see how the code flows through the project's modules, with timing."
+    }
+  ]
+}

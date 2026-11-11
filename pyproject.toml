@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "flowscope"
+version = "0.1.0"
+description = "Pick a test, see how the code flows through your modules, with timing. For understanding code you did not write."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Vishal Banwari" }]
+dependencies = ["pytest>=7"]
+
+[project.scripts]
+flowscope = "flowscope.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/flowscope"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
