@@ -5,7 +5,10 @@
 It runs your tests with a tracer, sees which parts of the code each one uses and where the time
 goes, and writes one HTML page you can open offline, mail or print to PDF.
 
-![The learning page: architecture diagram, call sequences, and written sections](assets/explain-learn.png)
+![Terminal: flow hld lists the modules of a real project, flow brief writes the page. Then the page scrolls: an architecture diagram, a call sequence, and written sections with file and line references](assets/demo-explain.gif)
+
+The demo ran on a real project with 63 tests (Mnemos, an agent-memory framework). The page is the
+`learn` kind. Inside Claude Code, `/explain learn` runs these steps and writes the text for you.
 
 ## Use it
 
