@@ -1,0 +1,6 @@
+- Walk the main flow: place an order, reserve stock, price the cart, send a receipt. Use the use case "small order gets a receipt".
+- Show the diagram: one coordinator, three helpers, one lookup at the bottom. Point at catalog, the dark box.
+- Slowest part: the price lookup, nearly all of the time. Sample answer (replace with yours): I would cache prices, because they change rarely.
+- Why this split: sample answer (replace with yours): each module can be tested on its own, which is why there are small, fast tests.
+- Not tested: behavior with many customers at once. Sample answer (replace with yours): stock.reserve would need a lock or a database transaction.
+- Question to answer yourself: what would you change first if this had to handle a hundred orders a second?

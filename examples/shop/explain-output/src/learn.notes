@@ -1,0 +1,6 @@
+- Start with orders.place: it is the only entry point and shows the whole order of events in about ten lines.
+- Then pricing.total and pricing.discount: the business rule (ten or more items get a discount) lives here.
+- Then stock.reserve and stock.check: they decide whether an order is allowed. check raises an error for too little stock.
+- Then catalog.price_of: small, but it is where the time goes, so read it before changing anything about speed.
+- Last, mailer.receipt: it only formats a message, so it can wait.
+- Run /flow on the test "small order gets a receipt" to watch these calls happen in order.

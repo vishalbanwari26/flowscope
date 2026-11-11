@@ -1,0 +1,3 @@
+This is a small online checkout. It takes an order, checks that the items are in stock, works out the price with a discount for ten or more items, and produces a receipt. All five use cases pass.
+
+Almost all of the running time goes into one step, the price lookup, so that is where to look if the checkout ever feels slow. Every part of the code is run by at least one test.

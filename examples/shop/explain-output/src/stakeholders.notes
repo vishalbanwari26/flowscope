@@ -1,0 +1,3 @@
+- Speed: the price lookup takes nearly all of the time. If checkout slows down under load, start there.
+- Safety net: every part of the code is exercised by a test, so a change that breaks pricing or stock should show up.
+- Not shown here: how the system behaves with many customers at once. The tests run one order at a time.

@@ -12,10 +12,27 @@ or print to PDF. Pick who it is for:
 | `/explain learn` | An engineer learning the system (a new hire, or you after an AI wrote most of it) | What lives where, with each module's busiest functions and who calls it, and a reading order |
 | `/explain interview` | You, presenting your own project | A two-minute architecture overview, the use cases to walk through, and talking points |
 
-![The explain page for the shop example: a two-paragraph summary, five use cases with sentences about which parts they use, a diagram of how the parts call each other, a bar chart where catalog.price_of takes 100% of the time, and sections for what no test covers and what fails](assets/brief.png)
+## Examples
 
-The sample page for [`examples/shop`](examples/shop) is [`assets/brief-example.html`](assets/brief-example.html).
-Download it and open it in a browser.
+All three pages below were made from the same five tests in [`examples/shop`](examples/shop).
+The HTML files are in [`examples/shop/explain-output/`](examples/shop/explain-output/); download
+one and open it in a browser. The text for each (summary and notes) is in the `src` folder next
+to them, so you can see what was given to `flow brief`.
+
+**For stakeholders**: [`stakeholders.html`](examples/shop/explain-output/stakeholders.html)
+
+![The stakeholder page: a two-paragraph summary, five use cases in plain sentences, a diagram where catalog is shaded dark, a bar for the price lookup taking 100% of the time, and points to raise](assets/explain-stakeholders.png)
+
+**For learning the system**: [`learn.html`](examples/shop/explain-output/learn.html). It adds
+"What lives where" and a reading order.
+
+![The learning page: the same sections plus What lives where, with each module's busiest functions and who calls it, and a reading order that starts at orders.place](assets/explain-learn.png)
+
+**For an interview**: [`interview.html`](examples/shop/explain-output/interview.html). It ends with
+talking points. The "why" answers in this example are made up, and the page marks them "replace
+with yours". In real use they are your answers to the three questions `/explain` asks.
+
+![The interview page: a two-minute overview, use cases to walk through, the diagram, what lives where, and talking points with sample answers marked to be replaced](assets/explain-interview.png)
 
 **What it can and cannot tell you.** The tests show what ran, in what order, and for how long.
 They do not show why you built it that way. For `learn` and `interview`, `/explain` asks you

@@ -1,0 +1,3 @@
+The shop is a checkout service split into four small modules: orders coordinates, stock decides whether an order is allowed, pricing computes the total, and catalog holds the prices. mailer produces the receipt. Each module does one job and orders is the only one that calls the others.
+
+The tests cover every module. They show one clear hot spot: the price lookup takes almost all of the running time.
