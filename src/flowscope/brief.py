@@ -18,6 +18,18 @@ MAX_CLAUSES = 4      # "a calls b" clauses per use case sentence
 NODE_W, NODE_H, COL_GAP, ROW_GAP = 128, 40, 96, 22
 
 
+def action_edges(t: dict) -> list:
+    """Module-to-module calls the test made, without the setup (fixtures, app start-up) that
+    the saved edges include. Falls back to all edges for an older saved overview."""
+    seq = t.get("seq")
+    if seq is None:
+        return t["edges"]
+    counts: dict = {}
+    for a, b, _f, _d in seq:
+        counts[(a, b)] = counts.get((a, b), 0) + 1
+    return [[a, b, n] for (a, b), n in counts.items()]
+
+
 def sentence(edges: list) -> str:
     """One use case in words: 'orders calls stock and pricing; pricing calls catalog'."""
     calls: dict = {}
@@ -88,14 +100,46 @@ def diagram(ix: Index) -> str:
     return "".join(out) + note
 
 
-def use_cases(ix: Index) -> str:
+GROUP_AT = 12     # more use cases than this are grouped by test file, closed unless one fails
+
+
+def _case_rows(tests: list) -> str:
+    """One row per use case. Tests that differ only by a [parameter] become one row."""
+    merged: dict = {}
+    for t in tests:
+        base, _, rest = t["name"].partition("[")
+        row = merged.setdefault(base, {"t": t, "outcomes": [], "params": []})
+        row["outcomes"].append(t["outcome"])
+        if rest:
+            row["params"].append(rest.rstrip("]"))
     rows = []
-    for t in ix.tests:
-        icon = {"passed": "✓", "failed": "✕", "error": "✕", "skipped": "–"}.get(t["outcome"], "?")
-        cls = "ok" if t["outcome"] == "passed" else "skip" if t["outcome"] == "skipped" else "bad"
-        rows.append(f'<li><span class="st {cls}" title="{escape(t["outcome"])}">{icon}</span>'
-                    f'<div><b>{escape(t["name"])}</b><div class="flow">{escape(sentence(t["edges"]))}</div></div></li>')
+    for base, row in merged.items():
+        oc = row["outcomes"]
+        worst = next((o for o in ("failed", "error") if o in oc), "passed" if "passed" in oc else oc[0])
+        icon = {"passed": "✓", "failed": "✕", "error": "✕", "skipped": "–"}.get(worst, "?")
+        cls = "ok" if worst == "passed" else "skip" if worst == "skipped" else "bad"
+        label = escape(base.strip())
+        if row["params"]:
+            label += f' <span class="par">{escape(", ".join(row["params"]))}</span>'
+        rows.append(f'<li><span class="st {cls}" title="{escape(worst)}">{icon}</span>'
+                    f'<div><b>{label}</b><div class="flow">{escape(sentence(action_edges(row["t"])))}</div></div></li>')
     return "<ul class='cases'>" + "".join(rows) + "</ul>"
+
+
+def use_cases(ix: Index) -> str:
+    if len(ix.tests) <= GROUP_AT:
+        return _case_rows(ix.tests)
+    groups: dict = {}
+    for t in ix.tests:
+        groups.setdefault(t["file"], []).append(t)
+    out = []
+    for file, tests in groups.items():
+        bad = sum(t["outcome"] in ("failed", "error") for t in tests)
+        state = f"{bad} fail" if bad else "all pass" if all(t["outcome"] == "passed" for t in tests) else "mixed"
+        name = file.split("/")[-1]
+        out.append(f'<details class="grp"{" open" if bad else ""}><summary><b>{escape(name)}</b> '
+                   f'<span class="par">{len(tests)} tests, {state}</span></summary>{_case_rows(tests)}</details>')
+    return "".join(out)
 
 
 def slow_parts(ix: Index) -> str:
@@ -163,7 +207,14 @@ def parts(ix: Index) -> str:
 
 def sequence(t: dict) -> str:
     """One use case as a sequence diagram: who calls whom, in the order it happened."""
-    calls = [c for c in t.get("seq", []) if c[0] != c[1]][:SEQ_MAX_CALLS]
+    first: dict = {}
+    for c in t.get("seq", []):
+        if c[0] != c[1]:
+            k = tuple(c[:3])
+            first.setdefault(k, [c, 0])[1] += 1      # a call repeated in a loop is drawn once
+    total = len(first)
+    reps = {k: v[1] for k, v in first.items()}
+    calls = [v[0] for v in first.values()][:SEQ_MAX_CALLS]
     if not calls:
         return ""
     who = []
@@ -182,14 +233,15 @@ def sequence(t: dict) -> str:
                    f'<text x="{x[m]}" y="25" class="nm">{escape(m)}</text>'
                    f'<line x1="{x[m]}" y1="34" x2="{x[m]}" y2="{height - 6}" class="life"/>')
     for i, (a, b, fn, _d) in enumerate(calls):
+        a0 = a
         a = "test" if a == "entry" else a
         y = 58 + i * SEQ_ROW + 8
         x1, x2 = x[a], x[b]
         out.append(f'<line x1="{x1}" y1="{y}" x2="{x2 - (6 if x2 > x1 else -6)}" y2="{y}" class="edge" marker-end="url(#sa)"/>'
-                   f'<text x="{(x1 + x2) / 2}" y="{y - 5}" class="msg">{i + 1}. {escape(fn)}()</text>')
+                   f'<text x="{(x1 + x2) / 2}" y="{y - 5}" class="msg">{i + 1}. {escape(fn)}(){f" x{reps[(a0, b, fn)]}" if reps[(a0, b, fn)] > 1 else ""}</text>')
     out.append("</svg>")
-    more = len([c for c in t.get("seq", []) if c[0] != c[1]]) - len(calls)
-    note = f"<p class='hint'>{more} more calls are not drawn.</p>" if more > 0 else ""
+    more = total - len(calls)
+    note = f"<p class='hint'>{more} more different calls are not drawn.</p>" if more > 0 else ""
     return "".join(out) + note
 
 
@@ -197,7 +249,7 @@ def request_flows(ix: Index) -> str:
     """Sequence diagrams for the use cases that touch the most parts of the system."""
     ok = [t for t in ix.tests if t["outcome"] == "passed" and any(c[0] != c[1] for c in t.get("seq", []))]
     ok.sort(key=lambda t: -len({c[1] for c in t["seq"]}))
-    blocks = [f"<h3>{escape(t['name'])}</h3><p class='hint'>{escape(sentence(t['edges']))}</p>{sequence(t)}"
+    blocks = [f"<h3>{escape(t['name'])}</h3><p class='hint'>{escape(sentence(action_edges(t)))}</p>{sequence(t)}"
               for t in ok[:SEQ_USE_CASES]]
     return "".join(blocks)
 
@@ -271,6 +323,7 @@ section{{break-inside:avoid}}.sum{{background:var(--card);border:1px solid var(-
 .stats b{{display:block;font-size:26px;color:var(--fg)}}
 .cases{{list-style:none;margin:0;padding:0}}.cases li{{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line)}}
 .flow{{color:var(--mut);font-size:14px}}.st{{flex:none;width:22px;height:22px;border-radius:50%;text-align:center;line-height:22px;font-size:13px;color:#fff}}
+.par{{color:var(--mut);font-size:13px;font-weight:400}}.grp{{border-bottom:1px solid var(--line);padding:6px 0}}.grp>summary{{cursor:pointer;padding:6px 0}}.grp .cases{{margin-left:8px}}
 .st.ok{{background:var(--ok)}}.st.bad{{background:var(--bad)}}.st.skip{{background:var(--mut)}}
 svg{{width:100%;height:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px}}
 .node{{fill:color-mix(in srgb,var(--acc) calc(var(--heat)*80%),var(--card));stroke:var(--line)}}

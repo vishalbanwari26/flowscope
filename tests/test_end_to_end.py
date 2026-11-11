@@ -336,3 +336,27 @@ def test_brief_for_interview_leads_with_architecture_and_the_request_flow(projec
     text = plain.read_text()
     assert "What lives where" not in text and "Request flow" not in text   # stakeholders do not get them
     assert "How the parts fit" in text
+
+
+def _t(name, file, outcome="passed", seq=(), edges=()):
+    return {"name": name, "file": file, "outcome": outcome, "seq": [list(c) for c in seq], "edges": [list(e) for e in edges]}
+
+
+def test_use_cases_are_grouped_by_file_and_parameters_merge():
+    from flowscope import brief
+    tests = [_t(f"store item[{b}]", "tests/test_store.py") for b in ("pg", "qdrant", "neo4j")]
+    tests += [_t(f"case {i}", "tests/test_other.py", "failed" if i == 0 else "passed") for i in range(10)]
+    html = brief.use_cases(type("Ix", (), {"tests": tests})())
+    assert html.count("<details") == 2
+    assert "3 tests, all pass" in html and "10 tests" in html and "1 fail" in html
+    assert html.count("store item") == 1 and "pg, qdrant, neo4j" in html      # one row, three variants
+    assert '<details class="grp" open>' in html and '<details class="grp">' in html   # only the failing group opens
+
+
+def test_sentence_and_sequence_ignore_setup_and_collapse_loops():
+    from flowscope import brief
+    t = _t("loop", "tests/t.py", seq=[("entry", "chat", "send", 0), ("chat", "conv", "handle", 1)] * 5,
+           edges=[("entry", "main", 1), ("main", "config", 1), ("entry", "chat", 5), ("chat", "conv", 5)])
+    assert "config" not in brief.sentence(brief.action_edges(t))             # start-up edges are left out
+    svg = brief.sequence(t)
+    assert "1. send() x5" in svg and "2. handle() x5" in svg and "3." not in svg
