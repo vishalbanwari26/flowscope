@@ -1,0 +1,15 @@
+{
+  "name": "jsshop",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "jest"
+  },
+  "devDependencies": {
+    "@babel/core": "^7",
+    "@babel/preset-env": "^7",
+    "@babel/preset-typescript": "^7",
+    "babel-jest": "^30",
+    "jest": "^30"
+  }
+}

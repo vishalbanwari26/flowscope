@@ -126,7 +126,7 @@ network, another program. A big share is a place to look, not proof of a problem
 ## Limits
 
 - `/explain` describes what the tests run. It does not know your design decisions, load or scale, or code no test runs. Do not present the page as a full architecture review.
-- Python and pytest only. A project with no tests has no use cases: `/addtests` helps write some.
+- Python (pytest) and JavaScript/TypeScript (Jest). A project with no tests has no use cases: `/addtests` helps write some.
 - `gaps` (behind `/addtests`) reads the source. It lists top-level functions and class methods, not nested ones.
 - A module is a file. Two files with the same name get a longer name.
 - Function level, not line level.
@@ -149,3 +149,23 @@ not depend on the editable install.
 ## License
 
 MIT
+
+## JavaScript and TypeScript
+
+`hld`, `lld`, `scope`, `debug`, `bottleneck`, `gaps`, `brief` and `/explain` work on projects that
+test with Jest. A Babel plugin wraps each named function of your own files (not `node_modules`, not
+test files), and a Jest setup file records, per test, which module called which and for how long.
+It uses your own Jest configuration and only adds a transform and a setup file.
+
+What you need: `npm install` done, Jest, and either a Babel setup (`babel.config.js`) or
+`@babel/preset-env` plus `@babel/preset-typescript` installed so flowscope can read the code.
+
+What is different from Python:
+- No per-test view yet: `flow run`, `/flow` and the viewer say so. The project-wide commands work.
+- A function is only recorded if it has a name (a `const f = () => ...`, a method, a declaration).
+  An anonymous callback counts under the function around it.
+- `beforeEach` and `afterEach` hooks count as setup. Builder-like names (`create*`, `seed*`, ...) and
+  constructors count as setup, as in Python.
+- Async functions are recorded, but their time includes the waiting.
+- Only the first Jest project is read when the config lists several. Vitest is not supported.
+- `gaps` lists exported functions and class methods; if a file has no exports it lists top-level ones.

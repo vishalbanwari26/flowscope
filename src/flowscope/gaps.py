@@ -55,6 +55,9 @@ def scan_file(path: Path, module: str, root: Path) -> list:
 
 def scan(root: Path, names: dict) -> list:
     """names maps an absolute filename to its module name (from modules.ModuleMap)."""
+    from . import jsbackend, modules
+    if modules.is_js_project(root):
+        return jsbackend.scan(root, names)
     items = []
     for filename, module in sorted(names.items()):
         if module:

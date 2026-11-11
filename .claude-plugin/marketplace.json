@@ -6,7 +6,7 @@
     {
       "name": "flowscope",
       "source": "./",
-      "description": "/explain: a one-page explanation of how a Python project works, from its tests."
+      "description": "/explain: a one-page explanation of how a Python or JavaScript/TypeScript project works, from its tests."
     }
   ]
 }

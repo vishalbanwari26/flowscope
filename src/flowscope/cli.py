@@ -33,8 +33,18 @@ def _prepare(path: str) -> Path:
         if p.is_dir() and str(p) not in sys.path:
             sys.path.insert(0, str(p))
     modules.configure(root)
-    hook.install()
+    if not modules.is_js_project(root):
+        hook.install()                  # JavaScript projects are recorded by Node, not by this hook
     return root
+
+
+def _js(path: str) -> bool:
+    return modules.is_js_project(Path(path).resolve())
+
+
+def _js_only_overview(what: str) -> None:
+    sys.exit(f"flowscope: {what} is not available for JavaScript and TypeScript projects yet. "
+             "Use hld, lld, scope, debug, bottleneck, gaps or brief.")
 
 
 def _find(root: Path, query: str) -> dict:
@@ -50,6 +60,8 @@ def _find(root: Path, query: str) -> dict:
 
 
 def cmd_serve(args) -> None:
+    if _js(args.path):
+        _js_only_overview("the viewer")
     runner = _runner()
     from .server import make_server
     root = _prepare(args.path)
@@ -71,6 +83,10 @@ def cmd_serve(args) -> None:
 
 
 def cmd_list(args) -> None:
+    if _js(args.path):
+        for t in _index(args).tests:
+            print(f"{t['id']}\t{t['name']}")
+        return
     runner = _runner()
     root = _prepare(args.path)
     for c in runner.discover(root):
@@ -79,7 +95,8 @@ def cmd_list(args) -> None:
 
 def _index(args):
     """The project-wide survey: every test run once, then cached."""
-    _runner()                                   # a clear message if pytest is missing
+    if not _js(args.path):
+        _runner()                               # a clear message if pytest is missing
     from . import survey
     root = _prepare(args.path)
 
@@ -117,6 +134,8 @@ def cmd_debug(args) -> None:
     _test_or_folder(args)
     if not args.use_case:
         return print(overview.debug_all(_index(args)))
+    if _js(args.path):
+        _js_only_overview("debug for one test")
     runner = _runner()
     root = _prepare(args.path)
     print(report.render_debug(runner.run_use_case(root, _find(root, args.use_case)["id"])))
@@ -127,6 +146,8 @@ def cmd_bottleneck(args) -> None:
     _test_or_folder(args)
     if not args.use_case:
         return print(overview.bottleneck(_index(args)))
+    if _js(args.path):
+        _js_only_overview("bottleneck for one test")
     runner = _runner()
     root = _prepare(args.path)
     print(report.render_bottleneck(runner.run_use_case(root, _find(root, args.use_case)["id"])))
@@ -140,7 +161,7 @@ def cmd_gaps(args) -> None:
     items = gaps.scan(root, names)
     tested, n_tests = None, 0
     try:
-        has_tests = bool(_runner().discover(root))
+        has_tests = True if _js(args.path) else bool(_runner().discover(root))
     except SystemExit:
         has_tests = False                        # pytest missing: treat as no tests, and say so
         print("flowscope: pytest is not installed here, so every function is shown as untested.",
@@ -168,6 +189,8 @@ def cmd_brief(args) -> None:
 
 
 def cmd_run(args) -> None:
+    if _js(args.path):
+        _js_only_overview("run for one test")
     runner = _runner()
     root = _prepare(args.path)
     case = _find(root, args.use_case)

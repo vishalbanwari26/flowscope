@@ -12,10 +12,10 @@ import os
 from collections import Counter
 from pathlib import Path
 
-from . import modules, runner
+from . import jsbackend, modules
 
 
-VERSION = 3      # bump when what is saved changes, so old saved overviews are rebuilt
+VERSION = 4      # bump when what is saved changes, so old saved overviews are rebuilt
 
 
 def cache_dir() -> Path:
@@ -24,12 +24,13 @@ def cache_dir() -> Path:
 
 def _stamp(root: Path) -> list:
     """Changes when a Python file in the project is added, removed or edited."""
-    skip = modules.SKIP_DIRS - {"tests", "test"}         # test files count here
+    skip = modules.SKIP_DIRS - {"tests", "test", "__tests__"}         # test files count here
+    exts = tuple(modules.JS_EXT if modules.is_js_project(root) else modules.PY_EXT)
     n, newest = 0, 0.0
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in skip and not d.endswith(".egg-info")]
         for f in filenames:
-            if f.endswith(".py"):
+            if f.endswith(exts):
                 n += 1
                 newest = max(newest, (Path(dirpath) / f).stat().st_mtime)
     return [n, newest]
@@ -70,6 +71,14 @@ def _record(case: dict, r: dict) -> dict:
 
 
 def collect(root: Path, progress=None) -> dict:
+    if modules.is_js_project(root):
+        pairs = jsbackend.collect_runs(root)
+        for i, (c, r) in enumerate(pairs, 1):
+            if progress:
+                progress(i, len(pairs))
+        return {"project": root.name, "modules": modules.all_names(),
+                "tests": [_record(c, r) for c, r in pairs]}
+    from . import runner                      # needs pytest, which a JavaScript project does not have
     cases = runner.discover(root)
     tests = []
     for i, c in enumerate(cases, 1):

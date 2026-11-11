@@ -1,6 +1,6 @@
 # flowscope
 
-**Run `/explain` in a Python project. Get a one-page explanation of how it works, made from your tests.**
+**Run `/explain` in a Python or JavaScript/TypeScript project. Get a one-page explanation of how it works, made from your tests.**
 
 It runs your tests with a tracer, sees which parts of the code each one uses and where the time
 goes, and writes one HTML page you can open offline, mail or print to PDF.
@@ -28,7 +28,7 @@ npx skills add vishalbanwari26/flowscope
 The skills are `explain` and `addtests`. Ask your agent to "explain this project for an interview".
 (I have not run `npx skills add` myself yet.)
 
-Then, inside a Python project that has pytest tests:
+Then, inside a project that has pytest tests (Python) or Jest tests (JavaScript or TypeScript):
 
 | Type | For | You get |
 |---|---|---|
@@ -40,11 +40,11 @@ No tests? `/addtests` writes some first.
 
 ## Examples
 
-Made from the five tests in [`examples/shop`](examples/shop). Download a page and open it:
+Made from the five tests in [`examples/shop`](examples/shop). Open them in your browser:
 
-- [stakeholders.html](examples/shop/explain-output/stakeholders.html)
-- [learn.html](examples/shop/explain-output/learn.html)
-- [interview.html](examples/shop/explain-output/interview.html)
+- [stakeholders.html](https://vishalbanwari.tech/flowscope/examples/shop/explain-output/stakeholders.html)
+- [learn.html](https://vishalbanwari.tech/flowscope/examples/shop/explain-output/learn.html)
+- [interview.html](https://vishalbanwari.tech/flowscope/examples/shop/explain-output/interview.html)
 
 ## What to know
 
@@ -53,7 +53,10 @@ Made from the five tests in [`examples/shop`](examples/shop). Download a page an
   asks you the "why" questions. Read the page before you send it.
 - It runs your tests in place. Start from a clean git tree.
 - Nothing leaves your machine.
-- Python and pytest only. Early: tried on five projects, Python 3.12.
+- Python (pytest) and JavaScript/TypeScript (Jest). Early: Python was tried on five projects (3.12);
+  JavaScript/TypeScript is new and was tried on one small TypeScript project. It needs `npm install`
+  done and a Babel setup (`babel-jest`). See [`examples/jsshop`](examples/jsshop). For JavaScript
+  the per-test view (`/flow`, the viewer) is not there yet, and `/addtests` writes pytest tests only.
 
 More: [every command, the viewer, and how it works](docs/reference.md).
 

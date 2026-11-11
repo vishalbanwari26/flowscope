@@ -13,13 +13,35 @@ from pathlib import Path
 # project root only, so a root that lives under a folder called "build" still works.
 SKIP_DIRS = {".git", ".hg", ".venv", "venv", "env", ".env", "site-packages", "node_modules",
              "__pycache__", "build", "dist", ".tox", ".nox", ".mypy_cache", ".pytest_cache",
-             ".ruff_cache", "tests", "test"}
+             ".ruff_cache", "tests", "test", "coverage", ".next", ".turbo", "__tests__", "__mocks__"}
+
+PY_EXT = {".py"}
+JS_EXT = {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}
 
 
-def is_project_file(rel: Path) -> bool:
-    """rel is a path below the project root."""
-    if rel.suffix != ".py":
+def is_js_project(root) -> bool:
+    """A package.json that uses Jest is a JavaScript or TypeScript project."""
+    import json
+    if os.environ.get("FLOWSCOPE_LANG") == "python":
         return False
+    try:
+        pkg = json.loads((Path(root) / "package.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    deps = {**pkg.get("dependencies", {}), **pkg.get("devDependencies", {})}
+    return "jest" in deps or "jest" in pkg or any((Path(root) / f"jest.config{e}").exists() for e in (".js", ".ts", ".cjs", ".mjs", ".json"))
+
+
+def is_project_file(rel: Path, exts=PY_EXT) -> bool:
+    """rel is a path below the project root."""
+    if rel.suffix not in exts:
+        return False
+    if exts is not PY_EXT:                           # JavaScript and TypeScript
+        if any(part in SKIP_DIRS for part in rel.parts[:-1]):
+            return False
+        n = rel.name
+        return not (".test." in n or ".spec." in n or n.endswith(".d.ts") or ".config." in n
+                    or n.startswith("setupTests") or n.startswith("jest."))
     if any(part in SKIP_DIRS or part.endswith(".egg-info") for part in rel.parts[:-1]):
         return False
     name = rel.name
@@ -31,7 +53,7 @@ def _parts(rel: Path, root_name: str) -> list[str]:
     parts = list(rel.with_suffix("").parts)
     if parts and parts[0] == "src":
         parts = parts[1:]
-    if parts and parts[-1] == "__init__":
+    if parts and parts[-1] in ("__init__", "index"):
         parts = parts[:-1] or [root_name]       # a package is named after its folder
     return parts or [root_name]
 
@@ -40,6 +62,7 @@ class ModuleMap:
     def __init__(self, root) -> None:
         self.root = Path(root).resolve()
         self.names: dict = {}                    # filename -> module name, or None if not ours
+        self.exts = JS_EXT if is_js_project(self.root) else PY_EXT
         files = self._walk()
         labels = {p: _parts(p.relative_to(self.root), self.root.name) for p in files}
         suffixes = Counter(".".join(parts[-k:]) for parts in labels.values()
@@ -57,7 +80,7 @@ class ModuleMap:
             dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.endswith(".egg-info")]
             for f in filenames:
                 p = Path(dirpath) / f
-                if is_project_file(p.relative_to(self.root)):
+                if is_project_file(p.relative_to(self.root), self.exts):
                     found.append(p)
         return found
 
@@ -72,7 +95,7 @@ class ModuleMap:
             rel = p.relative_to(self.root)
         except ValueError:
             rel = None
-        if rel is not None and is_project_file(rel):   # created after startup, or not walked
+        if rel is not None and is_project_file(rel, self.exts):   # created after startup, or not walked
             name = ".".join(_parts(rel, self.root.name)[-1:])
         self.names[filename] = name
         return name

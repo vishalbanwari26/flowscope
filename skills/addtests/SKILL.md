@@ -9,7 +9,7 @@ description: Write small pytest tests for Python code that has none, one use cas
 
 Run `flowscope --version` from the project folder. If it is not found, stop and tell me to install flowscope into the project's own Python environment (it must see the project's test dependencies); the steps are in the README at github.com/vishalbanwari26/flowscope. Do not install it yourself.
 
-It runs the project's tests in place and sends nothing over the network. Python and pytest projects only.
+It runs the project's tests in place and sends nothing over the network. Python and pytest projects only: it writes pytest tests.
 
 Run `flowscope gaps` from the project folder. It lists the public functions no test runs, entry points first (`main`, routes, CLI commands). If I named a module or function, work on that. Otherwise start with the top entry point.
 

@@ -1,6 +1,6 @@
 ---
 name: explain
-description: Explain a Python project on one HTML page, from its pytest tests. For stakeholders who do not read code, for an engineer learning the system, or for presenting the project in an interview. Use when asked to explain, document or present how a codebase works.
+description: Explain a Python (pytest) or JavaScript/TypeScript (Jest) project on one HTML page, from its tests. For stakeholders who do not read code, for an engineer learning the system, or for presenting the project in an interview. Use when asked to explain, document or present how a codebase works.
 ---
 
 # Explain a project from its tests
@@ -9,7 +9,7 @@ description: Explain a Python project on one HTML page, from its pytest tests. F
 
 Run `flowscope --version` from the project folder. If it is not found, stop and tell me to install flowscope into the project's own Python environment (it must see the project's test dependencies); the steps are in the README at github.com/vishalbanwari26/flowscope. Do not install it yourself.
 
-It runs the project's tests in place and sends nothing over the network. Python and pytest projects only.
+It runs the project's tests in place and sends nothing over the network. Works on Python (pytest) and JavaScript/TypeScript (Jest) projects.
 
 Make a one-page explanation of this project. The reader is whoever I name: `stakeholders` (people who do not read code, the default), `learn` (an engineer learning the system) or `interview` (I will present this project).
 
