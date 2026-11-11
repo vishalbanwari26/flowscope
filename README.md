@@ -9,10 +9,42 @@ whose flow you cannot explain. This is meant to make that flow easy to read.
 
 Status: early. Tried on five Python projects, tested on Python 3.12 only.
 
+## Demo
+
+The example is [`examples/shop`](examples/shop): a tiny checkout with four modules and five tests.
+One call, `catalog.price_of`, pretends to be a database lookup and is slow. The three commands
+below find it without anyone reading the code.
+
+![Terminal: flow hld lists the shop's modules, flow run shows one test's call tree, flow bottleneck shows catalog.price_of taking about 100% of the time](assets/demo-cli.gif)
+
+The viewer shows the same test. Each module's share of the time is a chip, and the call tree
+shows which call made which.
+
+![The viewer with the test "small order gets a receipt" selected: catalog takes 99% of the time, and the call tree shows orders.place calling stock.reserve, pricing.total and mailer.receipt](assets/viewer-flow.png)
+
+Click a chip to see the functions inside that module.
+
+![The viewer after clicking the catalog chip: one function, price_of, called once, 99% of the time](assets/viewer-module.png)
+
+Under the call tree there is a graph of the busiest modules, closed by default because it gets
+crowded on big projects. Each arrow is one module calling another. `entry` is the test itself.
+The darker the box, the bigger its share of the time.
+
+![The module graph for the same test: entry calls orders, orders calls stock, pricing and mailer, pricing calls catalog, which is shaded dark for 99% of the time](assets/viewer-graph.png)
+
+Try it yourself:
+
+```bash
+cd examples/shop
+../../bin/flow hld
+../../bin/flow run "small order"
+../../bin/flow bottleneck
+```
+
 ## Use it in Claude Code
 
 ```bash
-claude plugin marketplace add /path/to/flowscope
+claude plugin marketplace add vishalbanwari26/flowscope
 claude plugin install flowscope@flowscope
 ```
 
@@ -27,6 +59,7 @@ Then, in a Python project that has pytest tests:
 | `/debug [test]` | Why does it fail? | The error, and the last calls before it stopped. With no test, every failing test and its reason |
 | `/findbottleneck [test]` | Where does the time go? | The functions that take most of it, or one test's heaviest path |
 | `/addtests [target]` | There are no tests, or this part has none | Claude writes one small test per use case, entry points first, and shows each one's flow |
+| `/explain [audience]` | How do I explain this to someone who does not read code? | One HTML page: a short summary, what the system does, how its parts fit, where it is slow, what no test covers, what fails |
 | `/flowscope` | Show me | Opens the viewer in your browser |
 
 `/hld`, `/lld`, `/scope`, `/debug` and `/findbottleneck` with no test need every test run once.
@@ -50,11 +83,27 @@ Or install it into the project's environment and call `flowscope` directly:
 
 ```bash
 pip install /path/to/flowscope
-flowscope serve | list | run | hld | lld | scope | debug | bottleneck | gaps
+flowscope serve | list | run | hld | lld | scope | debug | bottleneck | gaps | brief
 ```
 
 `flowscope run "some test" --depth 5` prints more levels. `--setup` includes setup calls.
 `--fresh` on the project-wide commands ignores the saved result.
+
+## Explain it to someone else
+
+`/explain` (or `flow brief`) writes `flowscope-brief.html`: one page you can mail, open offline or
+print to PDF. It has the use cases in plain sentences ("orders calls stock and pricing"), a
+diagram of how the parts fit, where the time goes, which parts no test runs, and what fails. Through
+`/explain`, Claude also writes a two-paragraph summary at the top from the command output. Read it
+before you send the page: the numbers come from the tests, the sentences are Claude's reading of them.
+
+```bash
+flow brief --summary "This is a small checkout. ..."     # or --summary @notes.txt
+```
+
+![The brief for the shop example: a two-paragraph summary, five use cases with sentences about which parts they use, a diagram of how the parts call each other, a bar chart where catalog.price_of takes 100% of the time, and sections for what no test covers and what fails](assets/brief.png)
+
+The page for the example is [`assets/brief-example.html`](assets/brief-example.html). Download it and open it in a browser.
 
 ## The viewer
 
@@ -111,6 +160,7 @@ network, another program. A big share is a place to look, not proof of a problem
 - Function level, not line level.
 - It only shows what the tests run. "No test reaches it" means untested, not unused.
 - Code that runs in other processes is not seen.
+- The viewer runs every test in one server process, so module state carries over between runs. A test that relies on leftover state (a counter, a cache) can pass the first time and fail the second. `flow run` starts a fresh process each time.
 - Calls made by library code that the project's own functions never touch are not shown.
 
 ## Develop

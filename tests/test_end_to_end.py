@@ -303,3 +303,16 @@ def test_gaps_with_tests_leaves_out_what_the_tests_run(project, cached):
     assert r.returncode == 0, r.stderr
     assert "analyse" not in r.stdout and "total" not in r.stdout   # both are run
     assert "store.Store.add_row" not in r.stdout                   # run, in setup
+
+
+def test_brief_writes_one_page_with_flows_slow_parts_and_gaps(project, cached, tmp_path):
+    out = tmp_path / "page.html"
+    r = flowscope("brief", str(project), "--out", str(out), "--summary", "Checks <b>totals</b>.")
+    assert r.returncode == 0, r.stderr
+    page = out.read_text()
+    assert "total is summed" in page                      # a use case, by its test name
+    assert "pipeline calls util" in page                  # the flow in words
+    assert "Checks &lt;b&gt;totals&lt;/b&gt;." in page     # the summary is escaped, not injected
+    assert "<svg" in page and "How the parts fit" in page
+    assert "wrong total fails" in page and "What fails" in page
+    assert "http" not in page.replace("http://www.w3.org", "")   # nothing is loaded from the network

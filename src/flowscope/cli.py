@@ -151,6 +151,20 @@ def cmd_gaps(args) -> None:
     print(gaps.render(items, tested, n_tests))
 
 
+def cmd_brief(args) -> None:
+    """One HTML page for people who do not read code."""
+    from . import brief, gaps
+    ix = _index(args)
+    root = Path.cwd()                           # _prepare moved us into the project
+    items = gaps.scan(root, modules.configure(root).names)
+    summary = args.summary or ""
+    if summary.startswith("@"):                 # --summary @notes.txt reads the text from a file
+        summary = Path(summary[1:]).read_text(encoding="utf-8")
+    out = Path(args.out).resolve()
+    out.write_text(brief.build(ix, summary, items), encoding="utf-8")
+    print(f"wrote {out}")
+
+
 def cmd_run(args) -> None:
     runner = _runner()
     root = _prepare(args.path)
@@ -220,6 +234,13 @@ def main(argv=None) -> None:
     s.add_argument("path", nargs="?", default=".")
     s.add_argument("--fresh", **fresh)
     s.set_defaults(fn=cmd_gaps)
+
+    s = sub.add_parser("brief", help="one HTML page that explains the system to people who do not read code")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--out", default="flowscope-brief.html", help="where to write it (default: ./flowscope-brief.html)")
+    s.add_argument("--summary", help="a short plain-language summary for the top of the page; @file reads it from a file")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_brief)
 
     args = ap.parse_args(argv)
     args.fn(args)
