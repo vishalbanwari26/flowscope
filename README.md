@@ -26,6 +26,7 @@ Then, in a Python project that has pytest tests:
 | `/scope <name>` | Which tests reach this module or function? | A list of tests, with pass or fail |
 | `/debug [test]` | Why does it fail? | The error, and the last calls before it stopped. With no test, every failing test and its reason |
 | `/findbottleneck [test]` | Where does the time go? | The functions that take most of it, or one test's heaviest path |
+| `/addtests [target]` | There are no tests, or this part has none | Claude writes one small test per use case, entry points first, and shows each one's flow |
 | `/flowscope` | Show me | Opens the viewer in your browser |
 
 `/hld`, `/lld`, `/scope`, `/debug` and `/findbottleneck` with no test need every test run once.
@@ -49,7 +50,7 @@ Or install it into the project's environment and call `flowscope` directly:
 
 ```bash
 pip install /path/to/flowscope
-flowscope serve | list | run | hld | lld | scope | debug | bottleneck
+flowscope serve | list | run | hld | lld | scope | debug | bottleneck | gaps
 ```
 
 `flowscope run "some test" --depth 5` prints more levels. `--setup` includes setup calls.
@@ -104,7 +105,8 @@ network, another program. A big share is a place to look, not proof of a problem
 
 ## Limits
 
-- Python and pytest only. A project with no tests has no use cases.
+- Python and pytest only. A project with no tests has no use cases: `/addtests` helps write some.
+- `gaps` (behind `/addtests`) reads the source. It lists top-level functions and class methods, not nested ones.
 - A module is a file. Two files with the same name get a longer name.
 - Function level, not line level.
 - It only shows what the tests run. "No test reaches it" means untested, not unused.

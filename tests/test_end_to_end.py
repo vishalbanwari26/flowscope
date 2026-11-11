@@ -280,3 +280,26 @@ def test_bottleneck_ranks_functions_and_names_the_slowest_tests(project, cached)
 def test_bottleneck_of_one_test_shows_the_heaviest_path(project, cached):
     out = flowscope("bottleneck", "total is summed", str(project)).stdout
     assert "Heaviest path" in out and "pipeline.analyse()" in out and "Most own time:" in out
+
+
+def test_gaps_with_no_tests_lists_entry_points_first(tmp_path):
+    (tmp_path / "app.py").write_text(
+        "from flask import Flask\napp = Flask(__name__)\n\n"
+        "def helper(x):\n    return x\n\n"
+        "def _private():\n    pass\n\n"
+        "@app.route('/orders')\ndef orders():\n    return 'ok'\n\n"
+        "class Cart:\n    def add(self, item):\n        pass\n")
+    r = flowscope("gaps", str(tmp_path))
+    assert r.returncode == 0, r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("No tests.")
+    assert "entry" in lines[1] and "app.orders" in lines[1]       # the route comes first
+    assert "app.helper" in r.stdout and "app.Cart.add" in r.stdout
+    assert "_private" not in r.stdout
+
+
+def test_gaps_with_tests_leaves_out_what_the_tests_run(project, cached):
+    r = flowscope("gaps", str(project))
+    assert r.returncode == 0, r.stderr
+    assert "analyse" not in r.stdout and "total" not in r.stdout   # both are run
+    assert "store.Store.add_row" not in r.stdout                   # run, in setup

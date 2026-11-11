@@ -132,6 +132,25 @@ def cmd_bottleneck(args) -> None:
     print(report.render_bottleneck(runner.run_use_case(root, _find(root, args.use_case)["id"])))
 
 
+def cmd_gaps(args) -> None:
+    """Public functions no test runs. Works with no tests and with no pytest installed."""
+    from . import gaps
+    root = _prepare(args.path)                  # also puts the project on sys.path, so tests import
+    names = modules.configure(root).names
+    items = gaps.scan(root, names)
+    tested, n_tests = None, 0
+    try:
+        has_tests = bool(_runner().discover(root))
+    except SystemExit:
+        has_tests = False                        # pytest missing: treat as no tests, and say so
+        print("flowscope: pytest is not installed here, so every function is shown as untested.",
+              file=sys.stderr)
+    if has_tests:
+        ix = _index(args)
+        tested, n_tests = {(m, f) for m, f in ix.func_tests}, len(ix.tests)
+    print(gaps.render(items, tested, n_tests))
+
+
 def cmd_run(args) -> None:
     runner = _runner()
     root = _prepare(args.path)
@@ -196,6 +215,11 @@ def main(argv=None) -> None:
     s.add_argument("path", nargs="?", default=".")
     s.add_argument("--fresh", **fresh)
     s.set_defaults(fn=cmd_bottleneck)
+
+    s = sub.add_parser("gaps", help="public functions no test runs, entry points first; works with no tests")
+    s.add_argument("path", nargs="?", default=".")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_gaps)
 
     args = ap.parse_args(argv)
     args.fn(args)
