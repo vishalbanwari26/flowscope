@@ -1,15 +1,55 @@
 # flowscope
 
-See how a Python project's code flows, using its tests. Each test becomes a use case:
-flowscope runs it with a tracer attached and shows which modules and functions it ran, and
-where the time went.
+**`/explain`: turn your project's tests into a one-page explanation of how the system works.**
 
-When an AI writes much of your code, you can end up with a project whose tests pass and
-whose flow you cannot explain. This is meant to make that flow easy to read.
+Run it in a Python project. It runs your tests with a tracer attached, sees which parts of the
+code each one uses and where the time goes, and writes one HTML page you can mail, open offline
+or print to PDF. Pick who it is for:
+
+| Command | For | The page adds |
+|---|---|---|
+| `/explain` | Stakeholders who do not read code | Plain sentences about what the system does, a diagram, where it is slow, what no test covers, points to raise |
+| `/explain learn` | An engineer learning the system (a new hire, or you after an AI wrote most of it) | What lives where, with each module's busiest functions and who calls it, and a reading order |
+| `/explain interview` | You, presenting your own project | A two-minute architecture overview, the use cases to walk through, and talking points |
+
+![The explain page for the shop example: a two-paragraph summary, five use cases with sentences about which parts they use, a diagram of how the parts call each other, a bar chart where catalog.price_of takes 100% of the time, and sections for what no test covers and what fails](assets/brief.png)
+
+The sample page for [`examples/shop`](examples/shop) is [`assets/brief-example.html`](assets/brief-example.html).
+Download it and open it in a browser.
+
+**What it can and cannot tell you.** The tests show what ran, in what order, and for how long.
+They do not show why you built it that way. For `learn` and `interview`, `/explain` asks you
+three short questions about the why and puts your answers in your words. It does not invent
+trade-offs or scale numbers. The numbers on the page come from the tests. The sentences are
+Claude's reading of them, so read the page before you send it or present it.
 
 Status: early. Tried on five Python projects, tested on Python 3.12 only.
 
-## Demo
+## Install
+
+```bash
+claude plugin marketplace add vishalbanwari26/flowscope
+claude plugin install flowscope@flowscope
+```
+
+Then run `/explain` inside a Python project that has pytest tests. No tests? `/addtests` writes
+some, one use case at a time.
+
+Without Claude Code:
+
+```bash
+cd your-project
+/path/to/flowscope/bin/flow brief --for interview --summary "..." --notes "- first point"
+```
+
+`flow brief` writes `explain-output/explain.html`. `--out` moves it. Add `explain-output/` to
+`.gitignore`. `--summary` and `--notes` take text or `@file`; note lines starting `- ` become a list.
+
+## The engineer's tools
+
+`/explain` is built from these. Each answers one question and works on its own.
+
+### Trace one test
 
 The example is [`examples/shop`](examples/shop): a tiny checkout with four modules and five tests.
 One call, `catalog.price_of`, pretends to be a database lookup and is slow. The three commands
@@ -41,14 +81,9 @@ cd examples/shop
 ../../bin/flow bottleneck
 ```
 
-## Use it in Claude Code
+### The commands
 
-```bash
-claude plugin marketplace add vishalbanwari26/flowscope
-claude plugin install flowscope@flowscope
-```
-
-Then, in a Python project that has pytest tests:
+In a Python project that has pytest tests:
 
 | Command | It answers | You get |
 |---|---|---|
@@ -59,7 +94,6 @@ Then, in a Python project that has pytest tests:
 | `/debug [test]` | Why does it fail? | The error, and the last calls before it stopped. With no test, every failing test and its reason |
 | `/findbottleneck [test]` | Where does the time go? | The functions that take most of it, or one test's heaviest path |
 | `/addtests [target]` | There are no tests, or this part has none | Claude writes one small test per use case, entry points first, and shows each one's flow |
-| `/explain [audience]` | How do I explain this to someone who does not read code? | One HTML page: a short summary, what the system does, how its parts fit, where it is slow, what no test covers, what fails |
 | `/flowscope` | Show me | Opens the viewer in your browser |
 
 `/hld`, `/lld`, `/scope`, `/debug` and `/findbottleneck` with no test need every test run once.
@@ -70,7 +104,7 @@ Nothing is installed in your project. flowscope runs with the project's own Pyth
 `venv`, a uv project, or `python3`) and is read from the plugin folder. To use a different
 Python, set `FLOWSCOPE_PYTHON`. The launcher is a bash script, so macOS and Linux.
 
-## Use it without Claude Code
+### Use them without Claude Code
 
 ```bash
 cd your-project
@@ -89,23 +123,7 @@ flowscope serve | list | run | hld | lld | scope | debug | bottleneck | gaps | b
 `flowscope run "some test" --depth 5` prints more levels. `--setup` includes setup calls.
 `--fresh` on the project-wide commands ignores the saved result.
 
-## Explain it to someone else
-
-`/explain` (or `flow brief`) writes `flowscope-brief.html`: one page you can mail, open offline or
-print to PDF. It has the use cases in plain sentences ("orders calls stock and pricing"), a
-diagram of how the parts fit, where the time goes, which parts no test runs, and what fails. Through
-`/explain`, Claude also writes a two-paragraph summary at the top from the command output. Read it
-before you send the page: the numbers come from the tests, the sentences are Claude's reading of them.
-
-```bash
-flow brief --summary "This is a small checkout. ..."     # or --summary @notes.txt
-```
-
-![The brief for the shop example: a two-paragraph summary, five use cases with sentences about which parts they use, a diagram of how the parts call each other, a bar chart where catalog.price_of takes 100% of the time, and sections for what no test covers and what fails](assets/brief.png)
-
-The page for the example is [`assets/brief-example.html`](assets/brief-example.html). Download it and open it in a browser.
-
-## The viewer
+### The viewer
 
 Pick a test on the left. On the right, from top to bottom:
 
@@ -154,6 +172,7 @@ network, another program. A big share is a place to look, not proof of a problem
 
 ## Limits
 
+- `/explain` describes what the tests run. It does not know your design decisions, load or scale, or code no test runs. Do not present the page as a full architecture review.
 - Python and pytest only. A project with no tests has no use cases: `/addtests` helps write some.
 - `gaps` (behind `/addtests`) reads the source. It lists top-level functions and class methods, not nested ones.
 - A module is a file. Two files with the same name get a longer name.

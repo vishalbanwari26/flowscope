@@ -316,3 +316,18 @@ def test_brief_writes_one_page_with_flows_slow_parts_and_gaps(project, cached, t
     assert "<svg" in page and "How the parts fit" in page
     assert "wrong total fails" in page and "What fails" in page
     assert "http" not in page.replace("http://www.w3.org", "")   # nothing is loaded from the network
+
+
+def test_brief_for_interview_adds_what_lives_where_and_the_notes(project, cached, tmp_path):
+    notes = tmp_path / "n.txt"
+    notes.write_text("- First point <i>here</i>\n- Second point\n")
+    out = tmp_path / "deep" / "explain.html"                       # the folder is created
+    r = flowscope("brief", str(project), "--for", "interview", "--out", str(out), "--notes", f"@{notes}")
+    assert r.returncode == 0, r.stderr
+    page = out.read_text()
+    assert "architecture walkthrough" in page and "Talking points" in page
+    assert "<li>First point &lt;i&gt;here&lt;/i&gt;</li>" in page and "<li>Second point</li>" in page
+    assert "What lives where" in page and "<code>analyse</code>" in page
+    plain = tmp_path / "plain.html"
+    flowscope("brief", str(project), "--out", str(plain))
+    assert "What lives where" not in plain.read_text()             # stakeholders do not get it

@@ -130,7 +130,47 @@ def failures(ix: Index) -> str:
     return "<ul class='cases'>" + "".join(rows) + "</ul>"
 
 
-def build(ix: Index, summary: str = "", items: list | None = None) -> str:
+AUDIENCES = {
+    "stakeholders": ("how it works", "What the system does", "Points to raise"),
+    "learn": ("architecture guide", "What the system does", "Where to start reading"),
+    "interview": ("architecture walkthrough", "Use cases to walk through", "Talking points"),
+}
+TOP_FUNCS = 5
+
+
+def parts(ix: Index) -> str:
+    """Each module and its busiest functions: the 'what lives where' view an engineer learns from."""
+    ranked = sorted(ix.mod_tests, key=lambda m: (-len(ix.mod_tests[m]), m))[:MAX_NODES]
+    cards = []
+    for m in ranked:
+        funcs = sorted(((f, calls) for (mod, f), calls in ix.func_calls.items() if mod == m),
+                       key=lambda fc: -fc[1])[:TOP_FUNCS]
+        names = ", ".join(f"<code>{escape(f)}</code>" for f, _ in funcs) or "<span class='hint'>nothing recorded</span>"
+        callers = sorted({a for (a, b) in ix.edge_tests if b == m and a != "entry"})
+        used_by = ("used by " + ", ".join(escape(c) for c in callers)) if callers else "called straight from the tests"
+        cards.append(f"<div class='part'><b>{escape(m)}</b><span class='hint'> · {len(ix.mod_tests[m])} {'test' if len(ix.mod_tests[m]) == 1 else 'tests'} · {used_by}</span>"
+                     f"<div>{names}</div></div>")
+    return "".join(cards)
+
+
+def notes_html(notes: str) -> str:
+    """Paragraphs, and lines that start with '- ' as a list."""
+    out, items = [], []
+    for line in notes.splitlines() + [""]:
+        if line.startswith("- "):
+            items.append(f"<li>{escape(line[2:])}</li>")
+            continue
+        if items:
+            out.append("<ul class='notes'>" + "".join(items) + "</ul>")
+            items = []
+        if line.strip():
+            out.append(f"<p>{escape(line)}</p>")
+    return "".join(out)
+
+
+def build(ix: Index, summary: str = "", items: list | None = None,
+          audience: str = "stakeholders", notes: str = "") -> str:
+    title_tail, cases_h, notes_h = AUDIENCES[audience]
     n, bad = len(ix.tests), len(ix.failing())
     passed = sum(1 for t in ix.tests if t["outcome"] == "passed")
     paras = "".join(f"<p>{escape(p)}</p>" for p in summary.split("\n\n") if p.strip())
@@ -139,8 +179,12 @@ def build(ix: Index, summary: str = "", items: list | None = None) -> str:
              f"<div><b>{bad}</b>fail</div><div><b>{len(ix.modules)}</b>parts of the code</div></div>")
     dia = diagram(ix)
     when = datetime.date.today().isoformat()
+    inside = (f"<section><h2>What lives where</h2><p class='hint'>Each part, how many tests run it, who calls it, "
+              f"and its busiest functions.</p>{parts(ix)}</section>") if audience != "stakeholders" else ""
+    tail = f"<section><h2>{notes_h}</h2>{notes_html(notes)}</section>" if notes.strip() else ""
     return TEMPLATE.format(
-        title=escape(ix.data["project"]), when=when, head=head, stats=stats, cases=use_cases(ix),
+        title=escape(ix.data["project"]), tail_title=title_tail, cases_h=cases_h, inside=inside, tail=tail,
+        when=when, head=head, stats=stats, cases=use_cases(ix),
         diagram=f"<section><h2>How the parts fit</h2><p class='hint'>An arrow means one part calls another. "
                 f"Darker means more of the running time.</p>{dia}</section>" if dia else "",
         slow=slow_parts(ix), gaps=not_covered(ix, items), fails=failures(ix))
@@ -148,7 +192,7 @@ def build(ix: Index, summary: str = "", items: list | None = None) -> str:
 
 TEMPLATE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title}: how it works</title>
+<title>{title}: {tail_title}</title>
 <style>
 :root{{--bg:#0d1117;--card:#161b22;--line:#30363d;--fg:#e6edf3;--mut:#8b949e;--acc:#f0883e;--ok:#3fb950;--bad:#f85149}}
 @media (prefers-color-scheme:light){{:root{{--bg:#fff;--card:#f6f8fa;--line:#d0d7de;--fg:#1f2328;--mut:#59636e}}}}
@@ -168,16 +212,19 @@ svg{{width:100%;height:auto;background:var(--card);border:1px solid var(--line);
 .edge{{fill:none;stroke:var(--mut);stroke-width:1.4;opacity:.8}}.arrow{{fill:var(--mut)}}
 .bar{{display:grid;grid-template-columns:minmax(120px,240px) 1fr 52px;gap:10px;align-items:center;margin:6px 0;font-size:14px}}
 .bar i{{display:block;height:10px;border-radius:5px;background:var(--acc)}}.bar b{{text-align:right}}
+  .part{{padding:10px 0;border-bottom:1px solid var(--line)}}.notes{{padding-left:20px}}
 code{{background:var(--card);border:1px solid var(--line);border-radius:4px;padding:0 5px;font-size:13px}}
 footer{{margin-top:40px;color:var(--mut);font-size:13px}}
 </style></head><body><main>
-<h1>{title}: how it works</h1><div class="when">Built from the project's own tests on {when}.</div>
+<h1>{title}: {tail_title}</h1><div class="when">Built from the project's own tests on {when}.</div>
 {head}{stats}
-<section><h2>What the system does</h2><p class="hint">Each line is something the tests make the system do, with the parts it uses.</p>{cases}</section>
+<section><h2>{cases_h}</h2><p class="hint">Each line is something the tests make the system do, with the parts it uses.</p>{cases}</section>
 {diagram}
+{inside}
 <section><h2>Where it spends its time</h2><p class="hint">Share of the running time while the tests do their work, by function.</p>{slow}</section>
 <section><h2>What no test covers</h2>{gaps}</section>
 <section><h2>What fails</h2>{fails}</section>
+{tail}
 <footer>Made with flowscope. A use case is a test. "No test covers it" means untested, not unused. Times are shares
 measured with tracing on, which slows the code; read them as shares, not as seconds.</footer>
 </main></body></html>

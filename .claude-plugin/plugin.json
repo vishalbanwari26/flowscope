@@ -1,8 +1,8 @@
 {
   "name": "flowscope",
   "version": "0.1.0",
-  "description": "Pick a test and see how the code flows through the project's modules, with timing. For understanding code you did not write.",
+  "description": "/explain turns a Python project's tests into a one-page explanation of how the system works: for stakeholders, for learning it, or for an interview. Plus commands to trace flows, find bottlenecks and add tests.",
   "author": { "name": "Vishal Banwari" },
   "license": "MIT",
-  "keywords": ["python", "pytest", "tracing", "code-understanding", "visualization"]
+  "keywords": ["python", "pytest", "architecture", "explain", "interview", "code-understanding"]
 }

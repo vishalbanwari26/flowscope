@@ -1,13 +1,31 @@
 ---
-description: One page that explains the system to people who do not read code
-argument-hint: "[who it is for]"
+description: Explain this system on one page, for stakeholders, for learning it, or for an interview
+argument-hint: "[stakeholders | learn | interview]"
 ---
 
-I need to explain this project to someone who does not read code${ARGUMENTS:+ ($ARGUMENTS)}. Do this from the project folder:
+Make a one-page explanation of this project. The reader is `$ARGUMENTS` (if I gave nothing, use stakeholders: people who do not read code).
 
-1. Run `${CLAUDE_PLUGIN_ROOT}/bin/flow hld`, `${CLAUDE_PLUGIN_ROOT}/bin/flow bottleneck`, `${CLAUDE_PLUGIN_ROOT}/bin/flow debug` and `${CLAUDE_PLUGIN_ROOT}/bin/flow gaps`. The first may run every test once.
-2. Write a summary of two short paragraphs, for a reader who has never seen the code. Paragraph one: what the system does, in terms of what users or the business get, using the use case names. Paragraph two: what stands out, such as where the time goes, what fails, what no test covers. Use only what the commands printed. No module names unless the reader needs one. No jargon. Say "untested", never "broken". Quote shares, not milliseconds.
-3. Run `${CLAUDE_PLUGIN_ROOT}/bin/flow brief --summary "<your summary>"`. It writes `flowscope-brief.html` in the project folder.
-4. Tell me the path, and give me the two paragraphs so I can read them before I send the page. Mention anything in the page I should check first, such as a failing test or a guess you were not sure of.
+First, from the project folder, run `${CLAUDE_PLUGIN_ROOT}/bin/flow hld`, `${CLAUDE_PLUGIN_ROOT}/bin/flow bottleneck`, `${CLAUDE_PLUGIN_ROOT}/bin/flow debug` and `${CLAUDE_PLUGIN_ROOT}/bin/flow gaps`. The first may run every test once. If the project has no tests, stop and offer `/addtests`.
 
-Do not claim the system is correct or safe because the tests pass. They show what ran, not that it is right.
+Then write two things from what they printed, and nothing else:
+
+- **summary**: two short paragraphs. What the system does, in terms of the use case names. Then what stands out: where the time goes, what fails, what no test covers.
+- **notes**: a list of lines that each start with `- `.
+
+How they differ by reader:
+
+- **stakeholders**: plain words, no module names unless needed, what users or the business get. Notes are "Points to raise": one line each on risk, slow spots, untested areas. Say "untested", never "broken".
+- **learn** (an engineer learning this system): name the modules and what each one is for. Notes are "Where to start reading": a reading order of five to eight modules or functions, entry points first, one line on why each.
+- **interview** (the engineer will present this project): summary reads as a two-minute architecture overview. Notes are "Talking points": the flow of the main use case, the slowest part and what you would do about it, what is not tested and why that matters.
+
+Rules that matter more than style:
+
+1. The tests show what ran, not why it was built that way. Do not invent reasons, trade-offs, scale numbers or alternatives that were not considered. For learn and interview, before you write the notes, ask me up to three short questions about why: why this split into modules, what the main trade-off was, what I would change. Put my answers in the notes in my words. If I skip a question, write it into the notes as `- Question to answer yourself: ...`.
+2. Use only the command output and my answers. Quote shares, not milliseconds.
+3. Never say the system is correct or safe because the tests pass.
+
+Save the summary and the notes to files in `explain-output/` (`summary.txt`, `notes.txt`), then run:
+
+`${CLAUDE_PLUGIN_ROOT}/bin/flow brief --for <reader> --summary @explain-output/summary.txt --notes @explain-output/notes.txt`
+
+It writes `explain-output/explain.html`. Tell me the path and show me the summary and notes so I can read them before I use or send the page. Point out anything I should check first. Suggest adding `explain-output/` to `.gitignore` if it is not already there.

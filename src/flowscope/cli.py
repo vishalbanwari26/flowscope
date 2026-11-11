@@ -157,11 +157,13 @@ def cmd_brief(args) -> None:
     ix = _index(args)
     root = Path.cwd()                           # _prepare moved us into the project
     items = gaps.scan(root, modules.configure(root).names)
-    summary = args.summary or ""
-    if summary.startswith("@"):                 # --summary @notes.txt reads the text from a file
-        summary = Path(summary[1:]).read_text(encoding="utf-8")
+    def text(value):                            # "@file" reads the text from a file
+        value = value or ""
+        return Path(value[1:]).read_text(encoding="utf-8") if value.startswith("@") else value
+
     out = Path(args.out).resolve()
-    out.write_text(brief.build(ix, summary, items), encoding="utf-8")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(brief.build(ix, text(args.summary), items, args.audience, text(args.notes)), encoding="utf-8")
     print(f"wrote {out}")
 
 
@@ -237,8 +239,12 @@ def main(argv=None) -> None:
 
     s = sub.add_parser("brief", help="one HTML page that explains the system to people who do not read code")
     s.add_argument("path", nargs="?", default=".")
-    s.add_argument("--out", default="flowscope-brief.html", help="where to write it (default: ./flowscope-brief.html)")
+    s.add_argument("--for", dest="audience", choices=["stakeholders", "learn", "interview"], default="stakeholders",
+                   help="who reads it: stakeholders (default), learn (an engineer learning the system), interview")
+    s.add_argument("--out", default="explain-output/explain.html",
+                   help="where to write it (default: ./explain-output/explain.html)")
     s.add_argument("--summary", help="a short plain-language summary for the top of the page; @file reads it from a file")
+    s.add_argument("--notes", help="talking points or reading order for the bottom of the page; '- ' lines become a list; @file reads a file")
     s.add_argument("--fresh", **fresh)
     s.set_defaults(fn=cmd_brief)
 
