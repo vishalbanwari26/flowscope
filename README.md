@@ -26,7 +26,6 @@ npx skills add vishalbanwari26/flowscope
 ```
 
 The skills are `explain` and `addtests`. Ask your agent to "explain this project for an interview".
-(I have not run `npx skills add` myself yet.)
 
 Then, inside a project that has pytest tests (Python) or Jest or Vitest tests (JavaScript or TypeScript):
 
@@ -45,6 +44,8 @@ Made from the five tests in [`examples/shop`](examples/shop). Open them in your 
 - [stakeholders.html](https://vishalbanwari.tech/flowscope/examples/shop/explain-output/stakeholders.html)
 - [learn.html](https://vishalbanwari.tech/flowscope/examples/shop/explain-output/learn.html)
 - [interview.html](https://vishalbanwari.tech/flowscope/examples/shop/explain-output/interview.html)
+
+On a real project (Mnemos, 63 tests, the demo above): [learn page](https://vishalbanwari.tech/flowscope/examples/mnemos/learn.html).
 
 ## What to know
 
