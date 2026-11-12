@@ -109,7 +109,10 @@ def render_bottleneck(result: dict) -> str:
 def error_lines(output: str, limit: int = 6) -> list:
     """The lines pytest prints for what went wrong: the ones that start with 'E'."""
     lines = [" ".join(l.split()) for l in (output or "").splitlines() if l.startswith("E ")]
-    return [l for l in lines if len(l) > 1][:limit]            # drop blank "E" lines, squeeze spaces
+    lines = [l for l in lines if len(l) > 1]                   # drop blank "E" lines, squeeze spaces
+    if not lines:                                              # Jest and Vitest: the "Error: ..." line
+        lines = [" ".join(l.split()) for l in (output or "").splitlines() if l.strip().startswith(("Error", "TypeError", "ReferenceError", "AssertionError", "SyntaxError"))]
+    return lines[:limit]
 
 
 def render_debug(result: dict) -> str:
