@@ -18,7 +18,9 @@ let id = 0; const pending = new Map();
 ws.onmessage = (m) => { const d = JSON.parse(m.data); pending.get(d.id)?.(d.result); };
 const send = (method, params = {}) => new Promise((r) => { pending.set(++id, r); ws.send(JSON.stringify({ id, method, params })); });
 await send("Emulation.setDeviceMetricsOverride", { width: 1000, height: 800, deviceScaleFactor: 1, mobile: false });
+if (process.env.DARK) await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
 await send("Page.navigate", { url: "file://" + resolve(file) }); await sleep(1200);
+if (process.env.EVAL) console.log(JSON.stringify((await send("Runtime.evaluate", { expression: process.env.EVAL, returnByValue: true })).result.value));
 const h = (await send("Runtime.evaluate", { expression: "document.documentElement.scrollHeight" })).result.value;
 const r = await send("Page.captureScreenshot", { format: "png", captureBeyondViewport: true,
   clip: { x: 0, y: 0, width: 1000, height: h, scale: 1 } });

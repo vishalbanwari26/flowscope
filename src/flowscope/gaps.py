@@ -29,8 +29,8 @@ def _public(name: str) -> bool:
     return not name.startswith("_")
 
 
-def scan_file(path: Path, module: str, root: Path) -> list:
-    """The public functions and methods defined at the top of one file."""
+def scan_file(path: Path, module: str, root: Path, private: bool = False) -> list:
+    """The public functions and methods defined at the top of one file (private ones too, if asked)."""
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"))
     except (OSError, SyntaxError, UnicodeDecodeError):
@@ -43,25 +43,27 @@ def scan_file(path: Path, module: str, root: Path) -> list:
                       "entry": _is_entry(node), "size": node.end_lineno - node.lineno + 1})
 
     funcs = (ast.FunctionDef, ast.AsyncFunctionDef)
+    ok = (lambda n: True) if private else _public
     for node in tree.body:
-        if isinstance(node, funcs) and _public(node.name):
+        if isinstance(node, funcs) and ok(node.name):
             add(node, node.name)
-        elif isinstance(node, ast.ClassDef) and _public(node.name):
+        elif isinstance(node, ast.ClassDef) and ok(node.name):
             for sub in node.body:
-                if isinstance(sub, funcs) and _public(sub.name):
+                if isinstance(sub, funcs) and ok(sub.name):
                     add(sub, f"{node.name}.{sub.name}")
     return found
 
 
-def scan(root: Path, names: dict) -> list:
-    """names maps an absolute filename to its module name (from modules.ModuleMap)."""
+def scan(root: Path, names: dict, private: bool = False) -> list:
+    """names maps an absolute filename to its module name (from modules.ModuleMap).
+    private=True also lists the underscore functions (Python only), for `changes`."""
     from . import jsbackend, modules
     if modules.is_js_project(root):
         return jsbackend.scan(root, names)
     items = []
     for filename, module in sorted(names.items()):
         if module:
-            items += scan_file(Path(filename), module, root)
+            items += scan_file(Path(filename), module, root, private)
     return items
 
 

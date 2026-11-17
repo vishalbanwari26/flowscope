@@ -188,6 +188,52 @@ def cmd_brief(args) -> None:
     print(f"wrote {out}")
 
 
+def cmd_dump(args) -> None:
+    """Hidden: run the tests of a project folder and save the overview and source scan as JSON.
+    `changes` calls this on a checkout of the base commit, in a process of its own."""
+    from . import gaps, survey
+    root = _prepare(args.path)
+    print("flowscope: running the base commit's tests", file=sys.stderr, flush=True)
+    data = survey.collect(root)
+    items = gaps.scan(root, modules.configure(root).names, private=True)
+    Path(args.out).write_text(json.dumps({"data": data, "items": items, "version": survey.VERSION}))
+
+
+def cmd_changes(args) -> None:
+    """What a change did to the system's behavior, not to its lines."""
+    from . import changes, changes_html, gaps, survey
+    root = Path(args.path).resolve()
+    top, prefix = changes.locate(root)
+    sha = changes.resolve_base(top, args.ref)
+    base_label = f"{_git_short(top, sha)} {_git_subject(top, sha)}".strip()
+    head_label = "working tree" if changes.is_dirty(top) else f"{_git_short(top, 'HEAD')}"
+    print(f"flowscope: base is {base_label}", file=sys.stderr, flush=True)
+    base = changes.base_run(root, top, prefix, sha)
+    ix = _index(args)                                   # now: the saved overview, or run the tests
+    cwd = Path.cwd()
+    head = {"data": ix.data, "items": gaps.scan(cwd, modules.configure(cwd).names, private=True)}
+    result = changes.diff(base, head, changes.changed_lines(top, sha), prefix)
+    if args.md:
+        return print(changes.render_md(result, base_label, head_label))
+    if args.text:
+        return print(changes.render_text(result, base_label, head_label))
+    out = Path(args.out).resolve()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(changes_html.build(result, base_label, head_label), encoding="utf-8")
+    print(changes.headline(result))
+    print(f"wrote {out}")
+
+
+def _git_short(top, ref) -> str:
+    from . import changes
+    return changes._git(top, "rev-parse", "--short", ref, check=False)
+
+
+def _git_subject(top, ref) -> str:
+    from . import changes
+    return changes._git(top, "log", "-1", "--format=%s", ref, check=False)[:60]
+
+
 def cmd_run(args) -> None:
     if _js(args.path):
         _js_only_overview("run for one test")
@@ -270,6 +316,20 @@ def main(argv=None) -> None:
     s.add_argument("--notes", help="talking points or reading order for the bottom of the page; '- ' lines become a list; @file reads a file")
     s.add_argument("--fresh", **fresh)
     s.set_defaults(fn=cmd_brief)
+
+    s = sub.add_parser("changes", help="what a change did to the behavior: a diff of what the tests show, side by side")
+    s.add_argument("ref", nargs="?", help="what to compare with: a commit or branch (default: HEAD, or HEAD~1 on a clean tree)")
+    s.add_argument("--path", default=".", help="the project folder (default: here)")
+    s.add_argument("--out", default="explain-output/changes.html", help="where to write the page")
+    s.add_argument("--text", action="store_true", help="print a short text summary instead of writing the page")
+    s.add_argument("--md", action="store_true", help="print a short markdown comment for a pull request")
+    s.add_argument("--fresh", **fresh)
+    s.set_defaults(fn=cmd_changes)
+
+    s = sub.add_parser("_dump")
+    s.add_argument("path")
+    s.add_argument("out")
+    s.set_defaults(fn=cmd_dump)
 
     args = ap.parse_args(argv)
     args.fn(args)

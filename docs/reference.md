@@ -174,3 +174,26 @@ What is different from Python:
 - `gaps` lists exported functions and class methods; if a file has no exports it lists top-level ones.
   It reads the code with `@babel/parser` if the project has it, else TypeScript, else Node's type
   stripper with Vite's parser (Node 22.13 or newer).
+
+
+## Behavior diff: `flow changes [ref]`
+
+Compares the system now with the system at a base commit, by behavior instead of by lines.
+
+- **Base.** With no ref: your uncommitted changes against `HEAD`, or on a clean tree `HEAD` against `HEAD~1`.
+  With a branch name, the common ancestor is used, so only this branch's own changes show.
+- **How.** It checks out the base commit into a temporary git worktree, runs the tests there in a separate
+  process, and compares with the run of the current tree. The base run is cached per commit.
+- **What it compares, per use case (a test):** pass or fail, the calls between modules (lined up like a text
+  diff, with repeat counts), which functions ran and how many times. Time is not compared: on short tests it varies too much from run
+  to run, so only counts (deterministic) are shown. Use cases are matched by test id, so a renamed test shows as one removed and one new.
+- **Across the project:** new or gone calls between modules (architecture drift), new or gone public
+  functions, and changed functions that no test runs (changed lines from `git diff` checked against the traces).
+- **Output:** `explain-output/changes.html` (dark, side by side), `--text` for the terminal, `--md` for a pull
+  request comment.
+
+Limits: it only sees what the tests run. A behavior no test exercises can appear only as "changed, and no test
+runs it". It does not say whether a change is right, or why it was made: each card has an empty line for the
+author to write that. Calls inside one module are not drawn, only counted. The base run misses files git does
+not track (`.env`, data files), so tests that need them can fail at the base. For JavaScript, only exported
+functions are checked for blind spots, and `node_modules` of the project is linked into the base checkout.

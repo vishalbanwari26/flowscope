@@ -34,8 +34,14 @@ Then, inside a project that has pytest tests (Python) or Jest or Vitest tests (J
 | `/explain` | people who do not read code | what the system does, where it is slow, what no test covers |
 | `/explain learn` | an engineer learning the system | architecture, request flow, where state lives, a reading order |
 | `/explain interview` | presenting your own project | components, design decisions, bottlenecks, questions to expect |
+| `/changes` | reviewing a change, yours or an AI's | the diff of **behavior**: each use case before and after, side by side |
 
 No tests? `/addtests` writes some first.
+
+`/changes` is the one to use on every pull request. A code diff shows which lines moved. This shows which
+behaviors moved: new calls between modules, a lookup that now runs twice, a test that started failing, and
+changed code that no test runs. From a terminal: `flow changes main` (or any commit), `--md` for a pull
+request comment.
 
 ## Examples
 
@@ -46,6 +52,8 @@ Made from the five tests in [`examples/shop`](examples/shop). Open them in your 
 - [interview.html](https://vishalbanwari.tech/flowscope/examples/shop/explain-output/interview.html)
 
 On a real project (Mnemos, 63 tests, the demo above): [learn page](https://vishalbanwari.tech/flowscope/examples/mnemos/learn.html).
+
+Behavior diff of a real Flask pull request (490 tests, 14 behaviors changed): [changes.html](https://vishalbanwari.tech/flowscope/examples/flask-pr-5797/changes.html). Pull request comments: [GitHub Action](docs/github-action.md).
 
 ## What to know
 

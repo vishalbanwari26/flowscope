@@ -1,0 +1,67 @@
+name: flowscope behavior diff
+description: Comment on a pull request with what it changed in how the system behaves, taken from the project's own tests.
+branding:
+  icon: git-pull-request
+  color: orange
+inputs:
+  base:
+    description: "What to compare with: a commit or branch. Default: the pull request's base branch."
+    required: false
+    default: ""
+  comment:
+    description: "Post or update a comment on the pull request ('true' or 'false')."
+    required: false
+    default: "true"
+  flowscope:
+    description: "What to pip install. Default: the flowscope that comes with this action."
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Install flowscope
+      shell: bash
+      env:
+        SPEC: ${{ inputs.flowscope }}
+        HERE: ${{ github.action_path }}
+      run: python -m pip install --quiet "${SPEC:-$HERE}"
+
+    - name: Behavior diff
+      shell: bash
+      env:
+        BASE: ${{ inputs.base }}
+        BASE_REF: ${{ github.base_ref }}
+      run: |
+        base="${BASE:-origin/${BASE_REF:-main}}"
+        mkdir -p explain-output
+        python -m flowscope changes "$base" --out explain-output/changes.html
+        {
+          echo "<!-- flowscope-changes -->"
+          python -m flowscope changes "$base" --md
+          echo
+          echo "<sub>Side by side: download the \`flowscope-changes\` artifact of this run. Made with [flowscope](https://github.com/vishalbanwari26/flowscope). The tests show what ran, not why.</sub>"
+        } > explain-output/comment.md
+        cat explain-output/comment.md >> "$GITHUB_STEP_SUMMARY"
+
+    - name: Keep the page
+      uses: actions/upload-artifact@v4
+      with:
+        name: flowscope-changes
+        path: explain-output/changes.html
+
+    - name: Comment on the pull request
+      if: inputs.comment == 'true' && github.event_name == 'pull_request'
+      continue-on-error: true        # a pull request from a fork has a read-only token
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+        PR: ${{ github.event.pull_request.number }}
+      run: |
+        id=$(gh api "repos/$REPO/issues/$PR/comments" --paginate \
+             --jq '.[] | select(.body | startswith("<!-- flowscope-changes -->")) | .id' | head -1)
+        if [ -n "$id" ]; then
+          gh api --method PATCH "repos/$REPO/issues/comments/$id" -F body=@explain-output/comment.md > /dev/null
+        else
+          gh api --method POST "repos/$REPO/issues/$PR/comments" -F body=@explain-output/comment.md > /dev/null
+        fi
