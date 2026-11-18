@@ -38,10 +38,29 @@ Then, inside a project that has pytest tests (Python) or Jest or Vitest tests (J
 
 No tests? `/addtests` writes some first.
 
-`/changes` is the one to use on every pull request. A code diff shows which lines moved. This shows which
-behaviors moved: new calls between modules, a lookup that now runs twice, a test that started failing, and
-changed code that no test runs. From a terminal: `flow changes main` (or any commit), `--md` for a pull
-request comment.
+## Behavior diff
+
+When AI writes most of the code, a line diff is hard to review. It says three files changed. It does not
+say what the system now does differently.
+
+`/changes` runs your tests on the old commit and on the new one, then puts each use case side by side,
+before and after. Red is a call that is gone, green is a new one, amber is a count that changed.
+
+![Behavior diff of Flask pull request 5797: 3 files changed, 14 behaviors moved. A ranked "read these first" list, then each test before and after, side by side](assets/demo-changes.gif)
+
+That is a real Flask pull request: 3 files changed, 490 tests run twice, 14 behaviors moved.
+[Open the page](https://vishalbanwari.tech/flowscope/examples/flask-pr-5797/changes.html).
+
+It also shows:
+
+- tests that started or stopped failing
+- a rewritten test, matched with its old version
+- changed code that no test runs
+- new or removed links between modules, and public functions added or removed
+- a "why did this change?" box on each card, for the author to fill in
+
+From a terminal: `flow changes main` (or any commit). Add `--md` for a pull request comment, or let the
+[GitHub Action](docs/github-action.md) post it on every pull request.
 
 ## Examples
 
@@ -53,7 +72,7 @@ Made from the five tests in [`examples/shop`](examples/shop). Open them in your 
 
 On a real project (Mnemos, 63 tests, the demo above): [learn page](https://vishalbanwari.tech/flowscope/examples/mnemos/learn.html).
 
-Behavior diff of a real Flask pull request (490 tests, 14 behaviors changed): [changes.html](https://vishalbanwari.tech/flowscope/examples/flask-pr-5797/changes.html). Pull request comments: [GitHub Action](docs/github-action.md).
+Behavior diff of a real Flask pull request (490 tests, 14 behaviors changed): [changes.html](https://vishalbanwari.tech/flowscope/examples/flask-pr-5797/changes.html).
 
 ## What to know
 
